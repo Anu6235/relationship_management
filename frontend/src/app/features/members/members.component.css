@@ -1,0 +1,33 @@
+.custom-icon {
+    width: 20px; 
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  
+  .icon-wrapper {
+    display: flex;
+    align-items: center;
+  }
+
+  .verify-icon-gray {
+    filter: grayscale(100%) brightness(400%);
+  }
+  
+  
+  .verify-icon-blue {
+    filter: invert(33%) sepia(94%) saturate(1727%) hue-rotate(216deg) brightness(99%) contrast(104%);
+  }
+  
+  /* .profile-image {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
+  } */
+
+  /* .profile-image.error {
+    background-color: #cbd5e0;
+  }
+   */

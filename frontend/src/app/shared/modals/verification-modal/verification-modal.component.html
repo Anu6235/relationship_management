@@ -1,0 +1,36 @@
+<div
+  *ngIf="isVisible"
+  class="fixed inset-0 z-30 flex items-center justify-center"
+>
+  <!-- Modal backdrop -->
+  <div class="fixed inset-0 bg-black opacity-150"></div>
+
+  <!-- Modal content -->
+  <div
+    class="relative px-6 py-4 bg-white rounded-lg shadow-lg dark:bg-gray-800 w-96"
+  >
+    <h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+      Confirm Verification
+    </h3>
+
+    <p class="mb-6 text-sm text-gray-700 dark:text-gray-400">
+      Are you sure you want to proceed with verification? This action cannot be
+      undone.
+    </p>
+
+    <div class="flex justify-end space-x-4">
+      <button
+        class="px-4 py-2 text-sm font-medium leading-5 text-gray-700 transition-colors duration-150 border border-gray-300 rounded-lg dark:text-gray-400 active:bg-gray-100 hover:border-gray-500 focus:outline-none focus:shadow-outline-gray"
+        (click)="onCancel()"
+      >
+        Cancel
+      </button>
+      <button
+        class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-blue-600 border border-transparent rounded-lg active:bg-blue-600 hover:bg-blue-700 focus:outline-none focus:shadow-outline-blue"
+        (click)="onConfirm()"
+      >
+        Verify
+      </button>
+    </div>
+  </div>
+</div>

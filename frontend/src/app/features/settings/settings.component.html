@@ -1,0 +1,68 @@
+<div class="container-fluid">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-body">
+        <div class="container mx-auto p-4">
+          <h2 class="text-2xl font-bold mb-6">App Configuration</h2>
+
+          <form
+            [formGroup]="configForm"
+            (ngSubmit)="onSubmit()"
+            class="max-w-lg"
+          >
+            <div class="mb-4">
+              <label class="block mb-2">App Name</label>
+              <input
+                type="text"
+                formControlName="appName"
+                class="w-full p-2 border rounded"
+              />
+            </div>
+
+            <div class="mb-4">
+              <label class="block mb-2">Logo</label>
+              <input
+                type="file"
+                (change)="onFileSelect($event)"
+                class="w-full p-2 border rounded"
+                accept="image/*"
+              />
+              <img
+                *ngIf="previewUrl"
+                [src]="previewUrl"
+                class="mt-2 h-32 object-contain"
+                alt="Logo preview"
+              />
+            </div>
+
+            <div class="mb-4">
+              <label class="block mb-2">Email</label>
+              <input
+                type="email"
+                formControlName="email"
+                class="w-full p-2 border rounded"
+              />
+            </div>
+
+            <div class="mb-4">
+              <label class="block mb-2">Contact</label>
+              <input
+                type="text"
+                formControlName="contact"
+                class="w-full p-2 border rounded"
+              />
+            </div>
+
+            <button
+              type="submit"
+              [disabled]="configForm.invalid || isSubmitting"
+              class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+            >
+              {{ isSubmitting ? "Saving..." : "Save Configuration" }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

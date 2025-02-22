@@ -1,0 +1,208 @@
+<div *ngIf="isVisible" class="modal-wrapper">
+  <!-- Modal overlay -->
+  <div class="modal-overlay"></div>
+
+  <!-- Modal content -->
+  <div class="modal-container">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+          Edit Member
+        </h3>
+        <button type="button" class="close-button" (click)="onCancel()">
+          ×
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form [formGroup]="memberForm" (ngSubmit)="onSubmit()">
+          <div class="form-group mb-6">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Profile Image</label
+            >
+            <div class="image-upload-container">
+              <div class="preview-container" *ngIf="imagePreview">
+                <img
+                  [src]="imagePreview"
+                  alt="Profile Preview"
+                  class="image-preview"
+                />
+                <button
+                  type="button"
+                  class="clear-image"
+                  (click)="clearImage()"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="upload-button" *ngIf="!imagePreview">
+                <label for="imageInput" class="custom-file-upload">
+                  <i class="fa fa-cloud-upload"></i> Choose Image
+                </label>
+                <input
+                  type="file"
+                  id="imageInput"
+                  accept="image/*"
+                  (change)="onImageSelected($event)"
+                  style="display: none"
+                />
+              </div>
+              <p class="help-text">Edit profile picture</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-group">
+              <label for="first_name">First Name *</label>
+              <input id="first_name" type="text" formControlName="first_name" />
+              <div class="error" *ngIf="isFieldInvalid('first_name')">
+                {{ getErrorMessage("first_name") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="last_name">Last Name *</label>
+              <input id="last_name" type="text" formControlName="last_name" />
+              <div class="error" *ngIf="isFieldInvalid('last_name')">
+                {{ getErrorMessage("last_name") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="dob">Date of Birth *</label>
+              <input id="dob" type="date" formControlName="dob" />
+              <div class="error" *ngIf="isFieldInvalid('dob')">
+                {{ getErrorMessage("dob") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="gender">Gender *</label>
+              <select id="gender" formControlName="gender">
+                <option value="">Select Gender</option>
+                <option
+                  *ngFor="let option of genderOptions"
+                  [value]="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <div class="error" *ngIf="isFieldInvalid('gender')">
+                {{ getErrorMessage("gender") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="mobile_number">Mobile Number *</label>
+              <input
+                id="mobile_number"
+                type="tel"
+                formControlName="mobile_number"
+                inputmode="numeric"
+                pattern="[0-9]{10}"
+                maxlength="10"
+                (keypress)="validateNumberInput($event)"
+              />
+              <div class="error" *ngIf="isFieldInvalid('mobile_number')">
+                {{ getErrorMessage("mobile_number") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input
+                id="email"
+                type="email"
+                formControlName="email"
+                placeholder="example@example.com"
+              />
+              <div class="error" *ngIf="isFieldInvalid('email')">
+                {{ getErrorMessage("email") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="aadhar_number">Aadhar Number *</label>
+              <input
+                id="aadhar_number"
+                type="text"
+                formControlName="aadhar_number"
+                inputmode="numeric"
+                pattern="[0-9]{12}"
+                maxlength="12"
+                (keypress)="validateNumberInput($event)"
+              />
+              <div class="error" *ngIf="isFieldInvalid('aadhar_number')">
+                {{ getErrorMessage("aadhar_number") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="status">Status *</label>
+              <select id="status" formControlName="status">
+                <option value="">Select Status</option>
+                <option
+                  *ngFor="let option of statusOptions"
+                  [value]="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <div class="error" *ngIf="isFieldInvalid('status')">
+                {{ getErrorMessage("status") }}
+              </div>
+            </div>
+
+            <div class="form-group md:col-span-2">
+              <label for="address">Address *</label>
+              <textarea
+                id="address"
+                formControlName="address"
+                rows="3"
+              ></textarea>
+              <div class="error" *ngIf="isFieldInvalid('address')">
+                {{ getErrorMessage("address") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="marital_status">Marital Status *</label>
+              <select id="marital_status" formControlName="marital_status">
+                <option value="">Select Marital Status</option>
+                <option
+                  *ngFor="let option of maritalStatusOptions"
+                  [value]="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <div class="error" *ngIf="isFieldInvalid('marital_status')">
+                {{ getErrorMessage("marital_status") }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Deceased</label>
+              <select formControlName="deceased">
+                <option value="false" selected>No</option>
+                <option value="true">Yes</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="onCancel()">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="!memberForm.valid"
+            >
+              update Member
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
