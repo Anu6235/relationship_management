@@ -196,9 +196,7 @@ router.post('/', upload.single('profile_image'), async (req, res) => {
             // Prepend /images/member-images to make the path accessible from frontend
             memberData.profile_image = `/images/member-images/${req.file.filename}`;
         } else {
-            // Get a random avatar, save it to member-images, and assign it
-            const avatarPath = await copyRandomAvatarToMemberImages(memberData.gender);
-            memberData.profile_image = avatarPath;
+            memberData.profile_image = null;
         }
         
         const member = await Member.create(memberData, { transaction: t });
@@ -245,32 +243,36 @@ router.post('/', upload.single('profile_image'), async (req, res) => {
     }
 });
 
-// Update the getRandomAvatar function to handle paths correctly
-const getRandomAvatar = (gender) => {
-    const avatarDir = gender.toLowerCase() === 'female' 
-        ? 'member-avatars/female-avatar'
-        : 'member-avatars/male-avatar';
+// // Update the getRandomAvatar function to handle paths correctly
+// const getRandomAvatar = (gender) => {
+//     const avatarDir = gender.toLowerCase() === 'female' 
+//         ? 'member-avatars/female-avatar'
+//         : 'member-avatars/male-avatar';
     
-    try {
-        const fullPath = path.join('public/images', avatarDir);
-        const files = fs.readdirSync(fullPath);
-        const avatarFiles = files.filter(file => file.startsWith('avatar') && file.endsWith('.png'));
+//     try {
+//         const fullPath = path.join('public/images', avatarDir);
+//         const files = fs.readdirSync(fullPath);
+//         const avatarFiles = files.filter(file => file.startsWith('avatar') && file.endsWith('.png'));
         
-        if (avatarFiles.length === 0) {
-            return gender.toLowerCase() === 'female' 
-                ? 'member-avatars/female-avatar/avatar1.png' 
-                : 'member-avatars/male-avatar/avatar1.png';
-        }
+//         if (avatarFiles.length === 0) {
+//             return gender.toLowerCase() === 'female' 
+//                 ? 'member-avatars/female-avatar/avatar1.png' 
+//                 : 'member-avatars/male-avatar/avatar1.png';
+//         }
         
-        const randomIndex = Math.floor(Math.random() * avatarFiles.length);
-        return path.join(avatarDir, avatarFiles[randomIndex]);
-    } catch (error) {
-        console.error('Error reading avatar directory:', error);
-        return gender.toLowerCase() === 'female' 
-            ? 'member-avatars/female-avatar/avatar1.png' 
-            : 'member-avatars/male-avatar/avatar1.png';
-    }
-};
+//         const randomIndex = Math.floor(Math.random() * avatarFiles.length);
+//         return path.join(avatarDir, avatarFiles[randomIndex]);
+//     } catch (error) {
+//         console.error('Error reading avatar directory:', error);
+//         return gender.toLowerCase() === 'female' 
+//             ? 'member-avatars/female-avatar/avatar1.png' 
+//             : 'member-avatars/male-avatar/avatar1.png';
+//     }
+// };
+
+// const getGenderBasedAvatarPath = (gender) => {
+//     return `/images/member-avatars/${gender.toLowerCase()}-avatar.png`;
+// }
 
 //Update the member with image upload
 router.post('/', upload.single('profile_image'), async (req, res) => {
@@ -299,9 +301,7 @@ router.post('/', upload.single('profile_image'), async (req, res) => {
             // Prepend /images/member-images to make the path accessible from frontend
             memberData.profile_image = `/images/member-images/${req.file.filename}`;
         } else {
-            // Get a random avatar, save it to member-images, and assign it
-            const avatarPath = await copyRandomAvatarToMemberImages(memberData.gender);
-            memberData.profile_image = avatarPath;
+            memberData.profile_image = null;
         }
         
         const member = await Member.create(memberData, { transaction: t });
@@ -381,6 +381,8 @@ router.put('/:id', upload.single('profile_image'), async (req, res) => {
             // Set new image path
             req.body.profile_image = `/images/member-images/${req.file.filename}`;
         } else if (req.body.remove_image === 'true') {
+            req.body.profile_image = null;
+
             // If there's an existing image, delete it
             if (member.profile_image) {
                 const oldImagePath = path.join('public', member.profile_image);
@@ -388,10 +390,6 @@ router.put('/:id', upload.single('profile_image'), async (req, res) => {
                     if (err && err.code !== 'ENOENT') console.error("Error deleting old file:", err);
                 });
             }
-            
-            // Get a random avatar, save it to member-images, and assign it
-            const avatarPath = await copyRandomAvatarToMemberImages(member.gender);
-            req.body.profile_image = avatarPath;
         }
 
         // Update member
@@ -443,40 +441,41 @@ router.put('/:id', upload.single('profile_image'), async (req, res) => {
     }
 });
 
-const copyRandomAvatarToMemberImages = async (gender) => {
-    const avatarDir = gender.toLowerCase() === 'female' 
-        ? 'member-avatars/female-avatar'
-        : 'member-avatars/male-avatar';
+// const copyRandomAvatarToMemberImages = async (gender) => {
+//     const avatarDir = gender.toLowerCase() === 'female' 
+//         ? 'member-avatars/female-avatar'
+//         : 'member-avatars/male-avatar';
     
-    try {
-        const fullPath = path.join('public/images', avatarDir);
-        const files = fs.readdirSync(fullPath);
-        const avatarFiles = files.filter(file => file.startsWith('avatar') && file.endsWith('.png'));
+//     try {
+//         const fullPath = path.join('public/images', avatarDir);
+//         const files = fs.readdirSync(fullPath);
+//         const avatarFiles = files.filter(file => file.startsWith('avatar') && file.endsWith('.png'));
         
-        if (avatarFiles.length === 0) {
-            return '/images/member-avatars/default-avatar.png';
-        }
+//         if (avatarFiles.length === 0) {
+//             return '/images/member-avatars/default-avatar.png';
+//         }
         
-        // Select random avatar file
-        const randomIndex = Math.floor(Math.random() * avatarFiles.length);
-        const selectedAvatar = avatarFiles[randomIndex];
+//         // Select random avatar file
+//         const randomIndex = Math.floor(Math.random() * avatarFiles.length);
+//         const selectedAvatar = avatarFiles[randomIndex];
         
-        // Generate a unique filename for the copied avatar
-        const newFilename = `avatar-${gender.toLowerCase()}-${Date.now()}${path.extname(selectedAvatar)}`;
-        const destPath = path.join('public/images/member-images', newFilename);
+//         // Generate a unique filename for the copied avatar
+//         const newFilename = `avatar-${gender.toLowerCase()}-${Date.now()}${path.extname(selectedAvatar)}`;
+//         const destPath = path.join('public/images/member-images', newFilename);
         
-        // Copy the file
-        await fs.promises.copyFile(
-            path.join(fullPath, selectedAvatar),
-            destPath
-        );
+//         // Copy the file
+//         await fs.promises.copyFile(
+//             path.join(fullPath, selectedAvatar),
+//             destPath
+//         );
         
-        return `/images/member-images/${newFilename}`;
-    } catch (error) {
-        console.error('Error handling avatar:', error);
-        return '/images/member-avatars/default-avatar.png';
-    }
-};
+//         return `/images/member-images/${newFilename}`;
+//     } catch (error) {
+//         console.error('Error handling avatar:', error);
+//         return '/images/member-avatars/default-avatar.png';
+//     }
+// };
+
 
 // Delete member (with image cleanup)
 router.delete('/:id', async (req, res) => {
@@ -494,8 +493,8 @@ router.delete('/:id', async (req, res) => {
             });
         }
 
-      // Delete associated image if exists and is not a default avatar
-      if (member.profile_image && !member.profile_image.includes('avatar')) {
+      // Delete associated image if exists
+      if (member.profile_image) {
         const imagePath = path.join('public/images/member-images', member.profile_image);
         fs.unlink(imagePath, (err) => {
             if (err && !err.code === 'ENOENT') console.error("Error deleting file:", err);

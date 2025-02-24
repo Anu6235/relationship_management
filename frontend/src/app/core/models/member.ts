@@ -1,7 +1,7 @@
 export interface Member {
   id?: number;
   profile_image?: string;
-  profile_image_url?: string;
+  profile_image_url?: string | null;
   first_name: string;
   last_name: string;
   dob: Date;

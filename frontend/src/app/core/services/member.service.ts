@@ -42,27 +42,21 @@ export class MemberService {
     const updatedMember = { ...member };
 
     if (updatedMember.profile_image) {
-      // Check if it's already a full URL
-      if (updatedMember.profile_image.startsWith('http')) {
-        updatedMember.profile_image_url = updatedMember.profile_image;
-      } else {
-        const imagePath = updatedMember.profile_image.startsWith('/')
-          ? updatedMember.profile_image
-          : `/${updatedMember.profile_image}`;
-        updatedMember.profile_image_url = `${this.BASE_URL}${imagePath}`;
-      }
+      // If there's a custom uploaded image
+      updatedMember.profile_image_url = `${this.BASE_URL}${updatedMember.profile_image}`;
     } else {
-      updatedMember.profile_image_url = this.getDefaultAvatarUrl(updatedMember.gender);
+      // No image - will use initials
+      updatedMember.profile_image_url = null;
     }
 
     return updatedMember;
   }
 
-  private getDefaultAvatarUrl(gender: string): string {
-    const genderPath = gender.toLowerCase() === 'male' ? 'male-avatar' : 'female-avatar';
+  // private getDefaultAvatarUrl(gender: string): string {
+  //   const genderPath = gender.toLowerCase() === 'male' ? 'male-avatar' : 'female-avatar';
 
-    return `${this.BASE_URL}/images/member-avatars/${genderPath}/avatar.png`;
-  }
+  //   return `${this.BASE_URL}/images/member-avatars/${genderPath}/avatar.png`;
+  // }
 
   createMember(memberData: any, imageFile: File | null): Observable<SingleMemberResponse> {
     const formData = new FormData();

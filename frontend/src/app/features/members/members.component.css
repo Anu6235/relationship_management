@@ -31,3 +31,63 @@
     background-color: #cbd5e0;
   }
    */
+   .gender-male {
+    color: #242677;
+    background-color: #d1e2fd;
+  }
+  
+  .gender-female {
+    color: #8E244C ;
+    background-color: #F8D7E8 ;
+  }
+  
+  .gender-default {
+    color: #4a4a4a;
+    background-color: #e0e0e0;
+  }
+  
+/* Status Styles */
+.status-active {
+  color: #155724;
+  background-color: #D4EDDA;
+}
+
+.status-inactive {
+  color: #721C24;
+  background-color: #F8D7DA;
+}
+
+.status-suspended {
+  color: #856404;
+  background-color: #FFF3CD;
+}
+
+.status-default {
+  color: #6C757D;
+  background-color: #E2E3E5;
+}
+
+.marital-single {
+  color: #5A1A7E;
+  background-color: #EADAF1 ;
+}
+
+.marital-married {
+  color: #8d2732;
+  background-color: #efb5ba;
+}
+
+.marital-widowed {
+  color: #383D41;
+  background-color: #ededed;
+}
+
+.marital-divorced {
+  color: #856404;
+  background-color: #FFF3CD;
+}
+
+.marital-default {
+  color: #6C757D;
+  background-color: #E2E3E5;
+}

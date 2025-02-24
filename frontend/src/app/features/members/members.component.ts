@@ -7,6 +7,8 @@ import { AddMemberFormComponent } from '../../shared/modals/add-member-form/add-
 import { EditMemberFormComponent } from '../../shared/modals/edit-member-form/edit-member-form.component';
 import { DeleteMemberModalComponent } from '../../shared/modals/delete-member-modal/delete-member-modal.component';
 import { VerificationModalComponent } from '../../shared/modals/verification-modal/verification-modal.component';
+import { PaginationService, PaginationState } from '../../core/services/pagination.service';
+import { Subscription } from 'rxjs';
 
 
 @Component({
@@ -37,19 +39,66 @@ export class MembersComponent implements OnInit {
   memberToDelete: Member | null = null;
   selectedMember: Member | null = null;
   memberToVerify: string | null = null;
+  paginatedMembers: any[] = [];
+  currentPaginationState: PaginationState;
+  private paginationSubscription: Subscription = new Subscription();
 
   constructor(
     private memberService: MemberService,
-    private authService: AuthService
-  ) { }
+    private authService: AuthService,
+    private paginationService: PaginationService,
+  ) {
+    this.currentPaginationState = {
+      currentPage: 1,
+      pageSize: 10,
+      totalItems: 0,
+      totalPages: 0
+    }
+  }
 
   ngOnInit(): void {
     this.loadMembers();
-
+  
     this.authService.getCurrentUser().subscribe(user => {
       this.currentUser = user;
       console.log('Current user:', user);
-    })
+    });
+  
+    this.paginationSubscription = this.paginationService.paginationState$.subscribe(state => {
+      this.currentPaginationState = state;
+      this.updatePaginatedMembers();
+    });
+  }
+  
+  private updatePaginatedMembers(): void {
+    const startIndex = (this.currentPaginationState.currentPage - 1) * this.currentPaginationState.pageSize;
+    const endIndex = startIndex + this.currentPaginationState.pageSize;
+    this.paginatedMembers = this.members.slice(startIndex, endIndex);
+  }
+
+  ngOnDestroy() {
+    if (this.paginationSubscription) {
+      this.paginationSubscription.unsubscribe();
+    }
+  }
+
+  onPageChange(page: number) {
+    this.paginationService.setPage(page);
+  }
+
+  getStartIndex(): number {
+    return (this.currentPaginationState.currentPage - 1) * this.currentPaginationState.pageSize + 1;
+  }
+
+  getEndIndex(): number {
+    return Math.min(
+      this.currentPaginationState.currentPage * this.currentPaginationState.pageSize,
+      this.currentPaginationState.totalItems
+    );
+  }
+
+  getPageRange(): number[] {
+    return this.paginationService.getPageRange();
   }
 
   loadMembers(): void {
@@ -58,6 +107,12 @@ export class MembersComponent implements OnInit {
       next: (response) => {
         console.log('Members with verifier:', response.data);
         this.members = response.data;
+        // Update pagination after members are loaded
+        this.paginationService.updateState({
+          totalItems: this.members.length,
+          pageSize: 10,
+          currentPage: 1
+        });
         this.loading = false;
       },
       error: (error) => {
@@ -66,7 +121,6 @@ export class MembersComponent implements OnInit {
       }
     });
   }
-
 
 handleImageError(event: any, member: Member) {
   // If image fails to load, show initials placeholder
@@ -89,6 +143,12 @@ showInitialPlaceholder(imgElement: HTMLImageElement, member: Member) {
   const initials = `${member.first_name.charAt(0)}${member.last_name.charAt(0)}`;
   initialsDiv.textContent = initials;
 
+  // Remove any existing initials div
+  const existingInitials = parentElement.querySelector('.initials-placeholder');
+  if (existingInitials) {
+    parentElement.removeChild(existingInitials);
+  }
+
 
   parentElement.appendChild(initialsDiv);
 }
@@ -103,6 +163,9 @@ showInitialPlaceholder(imgElement: HTMLImageElement, member: Member) {
 
   addMember(newMember: any): void {
     this.members = [...this.members, newMember];
+    this.paginationService.updateState({
+      totalItems: this.members.length
+    });
     this.closeAddMemberModal();
   }
 
@@ -124,6 +187,7 @@ showInitialPlaceholder(imgElement: HTMLImageElement, member: Member) {
         updatedMember,
         ...this.members.slice(index + 1)
       ];
+      this.updatePaginatedMembers();
     }
     this.closeEditMemberModal();
   }
@@ -144,6 +208,9 @@ showInitialPlaceholder(imgElement: HTMLImageElement, member: Member) {
         next: (response) => {
           if (response.success) {
             this.members = this.members.filter(members => members.id !== this.memberToDelete?.id);
+            this.paginationService.updateState({
+              totalItems: this.members.length
+            });
           }
           this.closeDeleteMemberModal();
         },
@@ -168,44 +235,46 @@ showInitialPlaceholder(imgElement: HTMLImageElement, member: Member) {
       return value ? 'Yes' : 'No';
   }
 
-  getGenderClass(gender: string): string {
-      switch (gender.toLowerCase()) {
-        case 'male':
-          return 'text-blue-700 bg-blue-100 dark:bg-blue-700 dark:text-blue-100';
-        case 'female':
-          return 'text-pink-700 bg-pink-100 dark:bg-pink-700 dark:text-pink-100';
-        default:
-          return 'text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-100';
-    }
+getGenderClass(status: string): string {
+  switch (status.toLowerCase().trim()) {
+    case 'male':
+      return 'gender-male';
+    case 'female':
+      return 'gender-female';
+    default:
+      return 'gender-default';
   }
+}
 
-  getStatus(status: string): string {
-      switch (status.toLowerCase()) {
-        case 'active':
-          return 'text-green-700 bg-green-100 dark:bg-green-700 dark:text-green-100';
-        case 'inactive':
-          return 'text-red-700 bg-red-100 dark:bg-red-700 dark:text-red-100';
-          case 'suspended':
-            return 'text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-100';
-        default:
-          return 'text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-100';
-    }
-  }
 
-  getMaritalStatus(status: string): string {
-      switch (status.toLowerCase()) {
-        case 'single':
-          return 'text-green-700 bg-green-100 dark:bg-green-700 dark:text-green-100';
-        case 'married':
-          return 'text-red-700 bg-red-100 dark:bg-red-700 dark:text-red-100';
-          case 'widowed':
-            return 'text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-100';
-            case 'divorced':
-              return 'text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-100';
-        default:
-          return 'text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-100';
-    }
+getStatus(status: string): string {
+  switch (status.toLowerCase().trim()) {
+    case 'active':
+      return 'status-active';
+    case 'inactive':
+      return 'status-inactive';
+    case 'suspended':
+      return 'status-suspended';
+    default:
+      return 'status-default';
   }
+}
+
+getMaritalStatus(status: string): string {
+  switch (status.toLowerCase().trim()) {
+    case 'single':
+      return 'marital-single';
+    case 'married':
+      return 'marital-married';
+    case 'widowed':
+      return 'marital-widowed';
+    case 'divorced':
+      return 'marital-divorced';
+    default:
+      return 'marital-default';
+  }
+}
+
 
   toSentenceCase(str: string): string {
     if (!str) return '';

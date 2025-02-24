@@ -30,7 +30,7 @@
 </app-add-member-form>
 <br />
 
-<div class="w-full overflow-hidden rounded-lg shadow-xs" *ngIf="!loading">
+<div class="w-full overflow-hidden rounded-lg shadow-xs mb-2" *ngIf="!loading">
   <div class="w-full overflow-x-auto">
     <table class="w-full whitespace-no-wrap">
       <thead>
@@ -57,7 +57,7 @@
       </thead>
       <tbody class="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
         <tr
-          *ngFor="let member of members"
+          *ngFor="let member of paginatedMembers"
           class="text-gray-700 dark:text-gray-400"
         >
           <td class="px-4 py-3">
@@ -81,9 +81,15 @@
           <td class="px-4 py-3 text-sm">
             {{ formatDate(member.dob) }}
           </td>
-          <td class="px-4 py-3 text-sm">
-            {{ toSentenceCase(member.gender) }}
+          <td class="px-4 py-3 text-xs">
+            <span
+              [ngClass]="getGenderClass(member.gender)"
+              class="px-2 py-1 font-semibold leading-tight rounded-full"
+            >
+              {{ toSentenceCase(member.gender) }}
+            </span>
           </td>
+
           <td class="px-4 py-3 text-sm">
             {{ member.mobile_number }}
           </td>
@@ -220,91 +226,73 @@
     </table>
   </div>
   <div
-    class="grid px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase border-t dark:border-gray-700 bg-gray-50 sm:grid-cols-9 dark:text-gray-400 dark:bg-gray-800"
+    class="grid px-4 py-1 text-xs font-bold tracking-wide text-gray-500 uppercase border-t dark:border-gray-700 bg-gray-50 sm:grid-cols-9 dark:text-gray-400 dark:bg-gray-800"
   >
-    <span class="flex items-center col-span-3"> Showing 21-30 of 100 </span>
+    <span class="flex items-center col-span-3">
+      Showing {{ getStartIndex() }} - {{ getEndIndex() }} of
+      {{ currentPaginationState.totalItems }}
+    </span>
     <span class="col-span-2"></span>
-    <!-- Pagination -->
-    <span class="flex col-span-4 mt-2 sm:mt-auto sm:justify-end">
+    <span class="flex col-span-4 mt-1 sm:mt-auto sm:justify-end">
       <nav aria-label="Table navigation">
         <ul class="inline-flex items-center">
+          <!-- Previous button -->
           <li>
             <button
-              class="px-3 py-1 rounded-md rounded-l-lg focus:outline-none focus:shadow-outline-purple"
+              [disabled]="currentPaginationState.currentPage === 1"
+              (click)="onPageChange(currentPaginationState.currentPage - 1)"
+              class="px-2 py-1 rounded-md rounded-l-lg focus:outline-none focus:shadow-outline-purple"
+              [class.opacity-50]="currentPaginationState.currentPage === 1"
               aria-label="Previous"
             >
-              <svg
-                aria-hidden="true"
-                class="w-4 h-4 fill-current"
-                viewBox="0 0 20 20"
-              >
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
                 <path
                   d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                  clip-rule="evenodd"
-                  fill-rule="evenodd"
                 ></path>
               </svg>
             </button>
           </li>
+
+          <!-- Page numbers -->
+          <ng-container *ngFor="let page of getPageRange()">
+            <li *ngIf="page !== -1">
+              <button
+                (click)="onPageChange(page)"
+                class="px-3 py-1 rounded-md focus:outline-none"
+                [class.text-white]="page === currentPaginationState.currentPage"
+                [class.bg-blue-600]="
+                  page === currentPaginationState.currentPage
+                "
+                [class.border-blue-600]="
+                  page === currentPaginationState.currentPage
+                "
+              >
+                {{ page }}
+              </button>
+            </li>
+            <li *ngIf="page === -1">
+              <span class="px-3 py-1">...</span>
+            </li>
+          </ng-container>
+
+          <!-- Next button -->
           <li>
             <button
-              class="px-3 py-1 rounded-md focus:outline-none focus:shadow-outline-purple"
-            >
-              1
-            </button>
-          </li>
-          <li>
-            <button
-              class="px-3 py-1 rounded-md focus:outline-none focus:shadow-outline-purple"
-            >
-              2
-            </button>
-          </li>
-          <li>
-            <button
-              class="px-3 py-1 text-white transition-colors duration-150 bg-blue-600 border border-r-0 border-blue-600 rounded-md focus:outline-none focus:shadow-outline-blue"
-            >
-              3
-            </button>
-          </li>
-          <li>
-            <button
-              class="px-3 py-1 rounded-md focus:outline-none focus:shadow-outline-purple"
-            >
-              4
-            </button>
-          </li>
-          <li>
-            <span class="px-3 py-1">...</span>
-          </li>
-          <li>
-            <button
-              class="px-3 py-1 rounded-md focus:outline-none focus:shadow-outline-purple"
-            >
-              8
-            </button>
-          </li>
-          <li>
-            <button
-              class="px-3 py-1 rounded-md focus:outline-none focus:shadow-outline-purple"
-            >
-              9
-            </button>
-          </li>
-          <li>
-            <button
-              class="px-3 py-1 rounded-md rounded-r-lg focus:outline-none focus:shadow-outline-purple"
+              [disabled]="
+                currentPaginationState.currentPage ===
+                currentPaginationState.totalPages
+              "
+              (click)="onPageChange(currentPaginationState.currentPage + 1)"
+              class="px-2 py-1 rounded-md rounded-r-lg focus:outline-none focus:shadow-outline-purple"
+              [class.opacity-50]="
+                currentPaginationState.currentPage ===
+                currentPaginationState.totalPages
+              "
               aria-label="Next"
             >
-              <svg
-                class="w-4 h-4 fill-current"
-                aria-hidden="true"
-                viewBox="0 0 20 20"
-              >
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
                 <path
                   d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                  clip-rule="evenodd"
-                  fill-rule="evenodd"
                 ></path>
               </svg>
             </button>
