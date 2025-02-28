@@ -94,6 +94,28 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'wife_id',
       as: 'wifeMarriages'
     });
+    Member.belongsToMany(Member, {
+      through: models.Marriage,
+      as: 'spouse',
+      foreignKey: 'husband_id',
+      otherKey: 'wife_id'
+    });
+    Member.hasMany(Member, {
+      foreignKey: 'father_id',
+      as: 'fatherChildren'
+    });
+    Member.hasMany(Member, {
+      foreignKey: 'mother_id',
+      as: 'motherChildren'
+    });
+    Member.belongsTo(Member, {
+      foreignKey: 'father_id',
+      as: 'father'
+    });
+    Member.belongsTo(Member, {
+      foreignKey: 'mother_id',
+      as: 'mother'
+    });
   };
 
   Member.prototype.getProfileImageUrl = function() {

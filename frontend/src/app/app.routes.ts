@@ -1,8 +1,13 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { ContentComponent } from './layout/content/content.component';
+import { AddMemberFormComponent } from './shared/modals/add-member-form/add-member-form.component';
 
 export const routes: Routes = [
+  {
+    path: 'add',
+    component: AddMemberFormComponent
+  },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component')

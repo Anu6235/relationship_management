@@ -27,8 +27,20 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: true,
     },
+    // divorce_date: {
+    //   type: DataTypes.DATE,
+    //   allowNull: true
+    // },
+    // death_date: {
+    //   type: DataTypes.DATE,
+    //   allowNull: true
+    // },
+    // deceased_spouse_id: {
+    //   type: DataTypes.INTEGER,
+    //   allowNull: true
+    // },
     status: {
-      type: DataTypes.ENUM('pending', 'confirmed', 'divorced'),
+      type: DataTypes.ENUM('pending', 'confirmed', 'divorced', 'widowed'),
       defaultValue: 'pending',
     }
   }, {

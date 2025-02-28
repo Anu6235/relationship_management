@@ -1,304 +1,337 @@
-<h4 class="mb-4 text-lg font-semibold text-gray-600 dark:text-gray-300">
-  Member Management
-</h4>
-<div class="flex justify-end">
-  <button
-    class="flex items-center justify-start px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-blue-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-blue-700 focus:outline-none focus:shadow-outline-blue"
-    (click)="openAddMemberModal()"
-  >
-    <svg
-      class="w-4 h-4 mr-2 -ml-1"
-      fill="currentColor"
-      aria-hidden="true"
-      viewBox="0 0 20 20"
+<div *ngIf="!showRelationships">
+  <h4 class="mb-4 text-lg font-semibold text-gray-600 dark:text-gray-300">
+    Member Management
+  </h4>
+  <div class="flex justify-end">
+    <button
+      class="flex items-center justify-start px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-blue-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-blue-700 focus:outline-none focus:shadow-outline-blue"
+      (click)="openAddMemberModal()"
     >
-      <path
-        d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V5a1 1 0 011-1z"
-        clip-rule="evenodd"
-        fill-rule="evenodd"
-      ></path>
-    </svg>
-    <span>Add Member</span>
-  </button>
-</div>
-
-<app-add-member-form
-  [isVisible]="isAddModalOpen"
-  (memberAdded)="addMember($event)"
-  (cancelAdd)="closeAddMemberModal()"
->
-</app-add-member-form>
-<br />
-
-<div class="w-full overflow-hidden rounded-lg shadow-xs mb-2" *ngIf="!loading">
-  <div class="w-full overflow-x-auto">
-    <table class="w-full whitespace-no-wrap">
-      <thead>
-        <tr
-          class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800"
-        >
-          <th class="px-4 py-3">Profile</th>
-          <th class="px-4 py-3">First Name</th>
-          <th class="px-4 py-3">Last Name</th>
-          <th class="px-4 py-3">DOB</th>
-          <th class="px-4 py-3">Gender</th>
-          <th class="px-4 py-3">Mobile Number</th>
-          <th class="px-4 py-3">Email</th>
-          <th class="px-4 py-3">Aadhar Number</th>
-          <th class="px-4 py-3">Address</th>
-          <th class="px-4 py-3">Is Verified</th>
-          <th class="px-4 py-3">Verified At</th>
-          <th class="px-4 py-3">Verified By</th>
-          <th class="px-4 py-3">Status</th>
-          <th class="px-4 py-3">Deceased</th>
-          <th class="px-4 py-3">Marital Status</th>
-          <th class="px-4 py-3">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
-        <tr
-          *ngFor="let member of paginatedMembers"
-          class="text-gray-700 dark:text-gray-400"
-        >
-          <td class="px-4 py-3">
-            <div class="flex items-center">
-              <div class="relative hidden w-12 h-12 rounded-full md:block">
-                <img
-                  [src]="member.profile_image_url"
-                  alt="{{ member.first_name }} {{ member.last_name }}"
-                  class="profile-image w-full h-full object-cover rounded-full"
-                  (error)="handleImageError($event, member)"
-                />
-              </div>
-            </div>
-          </td>
-          <td class="px-4 py-3 text-sm font-semibold">
-            {{ toSentenceCase(member.first_name) }}
-          </td>
-          <td class="px-4 py-3 text-sm font-semibold">
-            {{ toSentenceCase(member.last_name) }}
-          </td>
-          <td class="px-4 py-3 text-sm">
-            {{ formatDate(member.dob) }}
-          </td>
-          <td class="px-4 py-3 text-xs">
-            <span
-              [ngClass]="getGenderClass(member.gender)"
-              class="px-2 py-1 font-semibold leading-tight rounded-full"
-            >
-              {{ toSentenceCase(member.gender) }}
-            </span>
-          </td>
-
-          <td class="px-4 py-3 text-sm">
-            {{ member.mobile_number }}
-          </td>
-          <td class="px-4 py-3 text-sm">
-            {{ member.email }}
-          </td>
-          <td class="px-4 py-3 text-sm">
-            {{ member.aadhar_number }}
-          </td>
-          <td class="px-4 py-3 text-sm">
-            {{ toSentenceCase(member.address) }}
-          </td>
-          <td class="px-4 py-3 text-sm">
-            {{ getBooleanText(member.is_verified) }}
-          </td>
-          <ng-container *ngIf="member.is_verified">
-            <td class="px-4 py-3 text-sm">
-              {{ formatDate(member.verified_at) }}
-            </td>
-            <td class="px-4 py-3 text-sm">
-              {{
-                toSentenceCase(
-                  member.is_verified ? getVerifierName(member) : "-"
-                )
-              }}
-            </td>
-          </ng-container>
-
-          <ng-container *ngIf="!member.is_verified">
-            <td class="px-4 py-3 text-sm">-</td>
-            <td class="px-4 py-3 text-sm">-</td>
-          </ng-container>
-
-          <td class="px-4 py-3 text-xs">
-            <span
-              [class]="
-                'px-2 py-1 font-semibold leading-tight rounded-full ' +
-                getStatus(member.status)
-              "
-            >
-              {{ toSentenceCase(member.status) }}
-            </span>
-          </td>
-          <td class="px-4 py-3 text-sm">
-            {{ getBooleanText(member.deceased) }}
-          </td>
-          <td class="px-4 py-3 text-xs">
-            <span
-              [class]="
-                'px-2 py-1 font-semibold leading-tight rounded-full ' +
-                getMaritalStatus(member.marital_status)
-              "
-            >
-              {{ toSentenceCase(member.marital_status) }}
-            </span>
-          </td>
-
-          <td class="px-4 py-3">
-            <div class="flex items-center space-x-4 text-sm">
-              <!-- External SVG verify icon with conditional styling -->
-              <img
-                src="assets/css/icons/verify.svg"
-                class="w-6 h-6 cursor-pointer transition-all duration-200"
-                [ngClass]="{
-                  'verify-icon-blue': member.is_verified,
-                  'verify-icon-gray': !member.is_verified
-                }"
-                (click)="openVerificationModal(member)"
-                alt="Verification icon"
-              />
-
-              <app-verification-modal
-                [isVisible]="isVerificationModalOpen"
-                (confirmed)="verifyMember()"
-                (cancelled)="closeVerificationModal()"
-              ></app-verification-modal>
-
-              <button
-                class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray"
-                style="color: #2563eb"
-                aria-label="Edit"
-                (click)="onEdit(member)"
-              >
-                <svg
-                  class="w-5 h-5"
-                  aria-hidden="true"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-                  ></path>
-                </svg>
-              </button>
-
-              <app-edit-member-form
-                [isVisible]="isEditModalOpen"
-                [member]="selectedMember"
-                (memberEdited)="updateMember($event)"
-                (cancelEdit)="closeEditMemberModal()"
-              >
-              </app-edit-member-form>
-
-              <button
-                class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray"
-                style="color: #2563eb"
-                aria-label="Delete"
-                (click)="openDeleteMemberModal(member)"
-              >
-                <svg
-                  class="w-5 h-5"
-                  aria-hidden="true"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                    clip-rule="evenodd"
-                  ></path>
-                </svg>
-              </button>
-
-              <app-delete-member-modal
-                [isVisible]="isDeleteModalOpen"
-                [member]="memberToDelete"
-                (confirmed)="deleteMember()"
-                (cancelled)="closeDeleteMemberModal()"
-              ></app-delete-member-modal>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <svg
+        class="w-4 h-4 mr-2 -ml-1"
+        fill="currentColor"
+        aria-hidden="true"
+        viewBox="0 0 20 20"
+      >
+        <path
+          d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V5a1 1 0 011-1z"
+          clip-rule="evenodd"
+          fill-rule="evenodd"
+        ></path>
+      </svg>
+      <span>Add Member</span>
+    </button>
   </div>
-  <div
-    class="grid px-4 py-1 text-xs font-bold tracking-wide text-gray-500 uppercase border-t dark:border-gray-700 bg-gray-50 sm:grid-cols-9 dark:text-gray-400 dark:bg-gray-800"
+
+  <app-add-member-form
+    [isVisible]="isAddModalOpen"
+    (memberAdded)="addMember($event)"
+    (cancelAdd)="closeAddMemberModal()"
   >
-    <span class="flex items-center col-span-3">
-      Showing {{ getStartIndex() }} - {{ getEndIndex() }} of
-      {{ currentPaginationState.totalItems }}
-    </span>
-    <span class="col-span-2"></span>
-    <span class="flex col-span-4 mt-1 sm:mt-auto sm:justify-end">
-      <nav aria-label="Table navigation">
-        <ul class="inline-flex items-center">
-          <!-- Previous button -->
-          <li>
-            <button
-              [disabled]="currentPaginationState.currentPage === 1"
-              (click)="onPageChange(currentPaginationState.currentPage - 1)"
-              class="px-2 py-1 rounded-md rounded-l-lg focus:outline-none focus:shadow-outline-purple"
-              [class.opacity-50]="currentPaginationState.currentPage === 1"
-              aria-label="Previous"
-            >
-              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                <path
-                  d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                ></path>
-              </svg>
-            </button>
-          </li>
+  </app-add-member-form>
+  <br />
 
-          <!-- Page numbers -->
-          <ng-container *ngFor="let page of getPageRange()">
-            <li *ngIf="page !== -1">
-              <button
-                (click)="onPageChange(page)"
-                class="px-3 py-1 rounded-md focus:outline-none"
-                [class.text-white]="page === currentPaginationState.currentPage"
-                [class.bg-blue-600]="
-                  page === currentPaginationState.currentPage
-                "
-                [class.border-blue-600]="
-                  page === currentPaginationState.currentPage
+  <div
+    class="w-full overflow-hidden rounded-lg shadow-xs mb-2"
+    *ngIf="!loading"
+  >
+    <div class="w-full overflow-x-auto">
+      <table class="w-full whitespace-no-wrap">
+        <thead>
+          <tr
+            class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800"
+          >
+            <th class="px-4 py-3">Profile</th>
+            <th class="px-4 py-3">First Name</th>
+            <th class="px-4 py-3">Last Name</th>
+            <th class="px-4 py-3">DOB</th>
+            <th class="px-4 py-3">Gender</th>
+            <th class="px-4 py-3">Mobile Number</th>
+            <th class="px-4 py-3">Email</th>
+            <th class="px-4 py-3">Aadhar Number</th>
+            <th class="px-4 py-3">Address</th>
+            <th class="px-4 py-3">Is Verified</th>
+            <th class="px-4 py-3">Verified At</th>
+            <th class="px-4 py-3">Verified By</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Deceased</th>
+            <th class="px-4 py-3">Marital Status</th>
+            <th class="px-4 py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
+          <tr
+            *ngFor="let member of paginatedMembers"
+            class="text-gray-700 dark:text-gray-400"
+          >
+            <td class="px-4 py-3">
+              <div class="flex items-center">
+                <div
+                  class="relative cursor-pointer w-12 h-12 rounded-full md:block"
+                  (click)="openMarriageConfirmationModal(member)"
+                >
+                  <img
+                    [src]="member.profile_image_url"
+                    alt="{{ member.first_name }} {{ member.last_name }}"
+                    class="profile-image w-full h-full object-cover rounded-full"
+                    (error)="handleImageError($event, member)"
+                  />
+                  <!-- Marriage request notification indicator -->
+                  <app-marriage-request-notification
+                    [member]="member"
+                  ></app-marriage-request-notification>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-sm font-semibold">
+              <a
+                (click)="viewRelationships(member)"
+                class="cursor-pointer text-blue-600 hover:underline"
+              >
+                {{ toSentenceCase(member.first_name) }}
+              </a>
+            </td>
+            <td class="px-4 py-3 text-sm font-semibold">
+              {{ toSentenceCase(member.last_name) }}
+            </td>
+            <td class="px-4 py-3 text-sm">
+              {{ formatDate(member.dob) }}
+            </td>
+            <td class="px-4 py-3 text-xs">
+              <span
+                [ngClass]="getGenderClass(member.gender)"
+                class="px-2 py-1 font-semibold leading-tight rounded-full"
+              >
+                {{ toSentenceCase(member.gender) }}
+              </span>
+            </td>
+
+            <td class="px-4 py-3 text-sm">
+              {{ member.mobile_number }}
+            </td>
+            <td class="px-4 py-3 text-sm">
+              {{ member.email }}
+            </td>
+            <td class="px-4 py-3 text-sm">
+              {{ member.aadhar_number }}
+            </td>
+            <td class="px-4 py-3 text-sm">
+              {{ toSentenceCase(member.address) }}
+            </td>
+            <td class="px-4 py-3 text-sm">
+              {{ getBooleanText(member.is_verified) }}
+            </td>
+            <ng-container *ngIf="member.is_verified">
+              <td class="px-4 py-3 text-sm">
+                {{ formatDate(member.verified_at) }}
+              </td>
+              <td class="px-4 py-3 text-sm">
+                {{
+                  toSentenceCase(
+                    member.is_verified ? getVerifierName(member) : "-"
+                  )
+                }}
+              </td>
+            </ng-container>
+
+            <ng-container *ngIf="!member.is_verified">
+              <td class="px-4 py-3 text-sm">-</td>
+              <td class="px-4 py-3 text-sm">-</td>
+            </ng-container>
+
+            <td class="px-4 py-3 text-xs">
+              <span
+                [class]="
+                  'px-2 py-1 font-semibold leading-tight rounded-full ' +
+                  getStatus(member.status)
                 "
               >
-                {{ page }}
+                {{ toSentenceCase(member.status) }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              {{ getBooleanText(member.deceased) }}
+            </td>
+            <td class="px-4 py-3 text-xs">
+              <span
+                [class]="
+                  'px-2 py-1 font-semibold leading-tight rounded-full ' +
+                  getMaritalStatus(member.marital_status)
+                "
+              >
+                {{ toSentenceCase(member.marital_status) }}
+              </span>
+            </td>
+
+            <td class="px-4 py-3">
+              <div class="flex items-center space-x-4 text-sm">
+                <!-- External SVG verify icon with conditional styling -->
+                <img
+                  src="assets/css/icons/verify.svg"
+                  class="w-6 h-6 cursor-pointer transition-all duration-200"
+                  [ngClass]="{
+                    'verify-icon-blue': member.is_verified,
+                    'verify-icon-gray': !member.is_verified
+                  }"
+                  (click)="openVerificationModal(member)"
+                  alt="Verification icon"
+                />
+
+                <app-verification-modal
+                  [isVisible]="isVerificationModalOpen"
+                  (confirmed)="verifyMember()"
+                  (cancelled)="closeVerificationModal()"
+                ></app-verification-modal>
+
+                <button
+                  class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray"
+                  style="color: #2563eb"
+                  aria-label="Edit"
+                  (click)="onEdit(member)"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    aria-hidden="true"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+                    ></path>
+                  </svg>
+                </button>
+
+                <app-edit-member-form
+                  [isVisible]="isEditModalOpen"
+                  [member]="selectedMember"
+                  (memberEdited)="updateMember($event)"
+                  (cancelEdit)="closeEditMemberModal()"
+                >
+                </app-edit-member-form>
+
+                <button
+                  class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray"
+                  style="color: #2563eb"
+                  aria-label="Delete"
+                  (click)="openDeleteMemberModal(member)"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    aria-hidden="true"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clip-rule="evenodd"
+                    ></path>
+                  </svg>
+                </button>
+
+                <app-delete-member-modal
+                  [isVisible]="isDeleteModalOpen"
+                  [member]="memberToDelete"
+                  (confirmed)="deleteMember()"
+                  (cancelled)="closeDeleteMemberModal()"
+                ></app-delete-member-modal>
+
+                <app-marriage-confirmation-modal
+                  [isVisible]="isMarriageConfirmationModalOpen"
+                  [memberId]="selectedMemberForMarriageConfirmation?.id"
+                  (modalClosed)="closeMarriageConfirmationModal()"
+                  (marriageConfirmed)="handleMarriageConfirmed($event)"
+                ></app-marriage-confirmation-modal>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div
+      class="grid px-4 py-1 text-xs font-bold tracking-wide text-gray-500 uppercase border-t dark:border-gray-700 bg-gray-50 sm:grid-cols-9 dark:text-gray-400 dark:bg-gray-800"
+    >
+      <span class="flex items-center col-span-3">
+        Showing {{ getStartIndex() }} - {{ getEndIndex() }} of
+        {{ currentPaginationState.totalItems }}
+      </span>
+      <span class="col-span-2"></span>
+      <span class="flex col-span-4 mt-1 sm:mt-auto sm:justify-end">
+        <nav aria-label="Table navigation">
+          <ul class="inline-flex items-center">
+            <!-- Previous button -->
+            <li>
+              <button
+                [disabled]="currentPaginationState.currentPage === 1"
+                (click)="onPageChange(currentPaginationState.currentPage - 1)"
+                class="px-2 py-1 rounded-md rounded-l-lg focus:outline-none focus:shadow-outline-purple"
+                [class.opacity-50]="currentPaginationState.currentPage === 1"
+                aria-label="Previous"
+              >
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                  <path
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                  ></path>
+                </svg>
               </button>
             </li>
-            <li *ngIf="page === -1">
-              <span class="px-3 py-1">...</span>
-            </li>
-          </ng-container>
 
-          <!-- Next button -->
-          <li>
-            <button
-              [disabled]="
-                currentPaginationState.currentPage ===
-                currentPaginationState.totalPages
-              "
-              (click)="onPageChange(currentPaginationState.currentPage + 1)"
-              class="px-2 py-1 rounded-md rounded-r-lg focus:outline-none focus:shadow-outline-purple"
-              [class.opacity-50]="
-                currentPaginationState.currentPage ===
-                currentPaginationState.totalPages
-              "
-              aria-label="Next"
-            >
-              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                <path
-                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                ></path>
-              </svg>
-            </button>
-          </li>
-        </ul>
-      </nav>
-    </span>
+            <!-- Page numbers -->
+            <ng-container *ngFor="let page of getPageRange()">
+              <li *ngIf="page !== -1">
+                <button
+                  (click)="onPageChange(page)"
+                  class="px-3 py-1 rounded-md focus:outline-none"
+                  [class.text-white]="
+                    page === currentPaginationState.currentPage
+                  "
+                  [class.bg-blue-600]="
+                    page === currentPaginationState.currentPage
+                  "
+                  [class.border-blue-600]="
+                    page === currentPaginationState.currentPage
+                  "
+                >
+                  {{ page }}
+                </button>
+              </li>
+              <li *ngIf="page === -1">
+                <span class="px-3 py-1">...</span>
+              </li>
+            </ng-container>
+
+            <!-- Next button -->
+            <li>
+              <button
+                [disabled]="
+                  currentPaginationState.currentPage ===
+                  currentPaginationState.totalPages
+                "
+                (click)="onPageChange(currentPaginationState.currentPage + 1)"
+                class="px-2 py-1 rounded-md rounded-r-lg focus:outline-none focus:shadow-outline-purple"
+                [class.opacity-50]="
+                  currentPaginationState.currentPage ===
+                  currentPaginationState.totalPages
+                "
+                aria-label="Next"
+              >
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                  <path
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  ></path>
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </span>
+    </div>
   </div>
 </div>
+
+<app-family-relationship
+  *ngIf="showRelationships"
+  [memberId]="selectedMemberId!"
+  (backToList)="onBackToList()"
+>
+</app-family-relationship>

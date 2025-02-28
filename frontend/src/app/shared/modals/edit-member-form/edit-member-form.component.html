@@ -15,6 +15,11 @@
       </div>
 
       <div class="modal-body">
+        <!-- Error message display -->
+        <div *ngIf="errorMessage" class="error-message mb-4">
+          {{ errorMessage }}
+        </div>
+
         <form [formGroup]="memberForm" (ngSubmit)="onSubmit()">
           <div class="form-group mb-6">
             <label
@@ -181,6 +186,20 @@
               </div>
             </div>
 
+            <!-- Spouse selection field - shown only when marital status is "Married" -->
+            <div class="form-group" *ngIf="showSpouseSelection">
+              <label for="spouse_id">Spouse</label>
+              <select id="spouse_id" formControlName="spouse_id">
+                <option value="">Select a Spouse</option>
+                <option
+                  *ngFor="let spouse of potentialSpouses"
+                  [value]="spouse.id"
+                >
+                  {{ spouse.first_name }} {{ spouse.last_name }}
+                </option>
+              </select>
+            </div>
+
             <div class="form-group">
               <label>Deceased</label>
               <select formControlName="deceased">
@@ -198,7 +217,7 @@
               class="btn-primary"
               [disabled]="!memberForm.valid"
             >
-              update Member
+              Update Member
             </button>
           </div>
         </form>

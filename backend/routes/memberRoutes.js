@@ -1,11 +1,12 @@
 const express = require('express');
 const { Member, sequelize, ParentId, Marriage, User } = require('../models');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
-const { Op } = require('sequelize');
+const { Op, where } = require('sequelize');
 const { v4: uuidv4 } = require('uuid'); 
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { profile } = require('console');
 
 const router = express.Router();
 
@@ -169,110 +170,6 @@ router.get('/:id', async (req, res) => {
         });
     }
 });
-
-router.post('/', upload.single('profile_image'), async (req, res) => {
-    const t = await sequelize.transaction();
-
-    try {
-        console.log("Request Body:", req.body);
-        
-        // Handle is_verified and related fields
-        let isVerified = false;
-        if (typeof req.body.is_verified === 'string') {
-            isVerified = req.body.is_verified.toLowerCase() === 'yes' || req.body.is_verified.toLowerCase() === 'true';
-        } else if (typeof req.body.is_verified === 'boolean') {
-            isVerified = req.body.is_verified;
-        }
-
-        const memberData = {
-            ...req.body,
-            is_verified: isVerified,
-            verified_at: isVerified ? new Date() : null,
-            verified_by: isVerified ? req.user?.id : null
-        };
-
-        // Handle profile image path
-        if (req.file) {
-            // Prepend /images/member-images to make the path accessible from frontend
-            memberData.profile_image = `/images/member-images/${req.file.filename}`;
-        } else {
-            memberData.profile_image = null;
-        }
-        
-        const member = await Member.create(memberData, { transaction: t });
-
-        // Handle marriage status and parent ID
-        if (memberData.marital_status.toLowerCase() === 'married') {
-            await ParentId.create({
-                member_id: member.id,
-                parent_id: `${member.gender.toUpperCase()}_${uuidv4()}`,
-                gender: member.gender
-            }, { transaction: t });
-        }
-
-        await t.commit();
-
-        // Fetch the complete member data with associations
-        const completeMember = await Member.findByPk(member.id, {
-            include: [{
-                model: ParentId,
-                as: 'parentId',
-                attributes: ['parent_id']
-            }]
-        });
-
-        res.status(201).json({
-            success: true,
-            data: completeMember
-        });
-    } catch (error) {
-        await t.rollback();
-        
-        // Clean up uploaded file if transaction failed
-        if (req.file) {
-            fs.unlink(path.join('public/images/member-images', req.file.filename), (err) => {
-                if (err) console.error("Error deleting file:", err);
-            });
-        }
-        
-        console.error("Database Error:", error); 
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-});
-
-// // Update the getRandomAvatar function to handle paths correctly
-// const getRandomAvatar = (gender) => {
-//     const avatarDir = gender.toLowerCase() === 'female' 
-//         ? 'member-avatars/female-avatar'
-//         : 'member-avatars/male-avatar';
-    
-//     try {
-//         const fullPath = path.join('public/images', avatarDir);
-//         const files = fs.readdirSync(fullPath);
-//         const avatarFiles = files.filter(file => file.startsWith('avatar') && file.endsWith('.png'));
-        
-//         if (avatarFiles.length === 0) {
-//             return gender.toLowerCase() === 'female' 
-//                 ? 'member-avatars/female-avatar/avatar1.png' 
-//                 : 'member-avatars/male-avatar/avatar1.png';
-//         }
-        
-//         const randomIndex = Math.floor(Math.random() * avatarFiles.length);
-//         return path.join(avatarDir, avatarFiles[randomIndex]);
-//     } catch (error) {
-//         console.error('Error reading avatar directory:', error);
-//         return gender.toLowerCase() === 'female' 
-//             ? 'member-avatars/female-avatar/avatar1.png' 
-//             : 'member-avatars/male-avatar/avatar1.png';
-//     }
-// };
-
-// const getGenderBasedAvatarPath = (gender) => {
-//     return `/images/member-avatars/${gender.toLowerCase()}-avatar.png`;
-// }
 
 //Update the member with image upload
 router.post('/', upload.single('profile_image'), async (req, res) => {
@@ -441,42 +338,6 @@ router.put('/:id', upload.single('profile_image'), async (req, res) => {
     }
 });
 
-// const copyRandomAvatarToMemberImages = async (gender) => {
-//     const avatarDir = gender.toLowerCase() === 'female' 
-//         ? 'member-avatars/female-avatar'
-//         : 'member-avatars/male-avatar';
-    
-//     try {
-//         const fullPath = path.join('public/images', avatarDir);
-//         const files = fs.readdirSync(fullPath);
-//         const avatarFiles = files.filter(file => file.startsWith('avatar') && file.endsWith('.png'));
-        
-//         if (avatarFiles.length === 0) {
-//             return '/images/member-avatars/default-avatar.png';
-//         }
-        
-//         // Select random avatar file
-//         const randomIndex = Math.floor(Math.random() * avatarFiles.length);
-//         const selectedAvatar = avatarFiles[randomIndex];
-        
-//         // Generate a unique filename for the copied avatar
-//         const newFilename = `avatar-${gender.toLowerCase()}-${Date.now()}${path.extname(selectedAvatar)}`;
-//         const destPath = path.join('public/images/member-images', newFilename);
-        
-//         // Copy the file
-//         await fs.promises.copyFile(
-//             path.join(fullPath, selectedAvatar),
-//             destPath
-//         );
-        
-//         return `/images/member-images/${newFilename}`;
-//     } catch (error) {
-//         console.error('Error handling avatar:', error);
-//         return '/images/member-avatars/default-avatar.png';
-//     }
-// };
-
-
 // Delete member (with image cleanup)
 router.delete('/:id', async (req, res) => {
     const t = await sequelize.transaction();
@@ -629,16 +490,55 @@ router.post('/marriage', async (req, res) => {
 });
 
 router.put('/marriage/:id/confirm', async (req, res) => {
-    // Existing code for marriage confirmation
+    const marriageId = req.params.id;
+    const confirmingMemberId = req.params.id;
+  
+    if (!marriageId || marriageId === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid marriage ID is required'
+      });
+    }
+
+    if (!confirmingMemberId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Member ID is required to confirm marriage'
+      });
+    }
+    
     const t = await sequelize.transaction();
 
     try {
-        const marriage = await Marriage.findByPk(req.params.id);
+        const marriage = await Marriage.findByPk(req.params.id, {
+            include: [
+                {
+                    model: Member,
+                    as: 'husband',
+                    include: ['parentId']
+                },
+                {
+                    model: Member,
+                    as: 'wife',
+                    include: ['parentId']
+                }
+            ]
+        });
+
         if (!marriage) {
             await t.rollback();
             return res.status(404).json({
                 success: false,
                 message: 'Marriage record not found'
+            });
+        }
+
+        // Check if the confirming member is either husband or wife
+        if (confirmingMemberId != marriage.husband_id && confirmingMemberId != marriage.wife_id) {
+            await t.rollback();
+            return res.status(403).json({
+                success: false,
+                message: 'Only parties involved in the marriage can confirm it'
             });
         }
 
@@ -650,26 +550,52 @@ router.put('/marriage/:id/confirm', async (req, res) => {
             });
         }
 
-        //Update marriage status
+        // Update marriage status
         await marriage.update({
-            status: 'confirmed'
+            status: 'confirmed',
+            confirmed_by: confirmingMemberId,
+            confirmed_at: new Date()
         }, { transaction: t });
 
-        //Update both members' marital status
-        await Member.update(
-            { marital_status: 'married' },
-            {
-                where: {
-                    id: { [Op.in]: [marriage.husband_id, marriage.wife_id] }
+        // Verify the status change
+        const updatedMarriage = await Marriage.findByPk(req.params.id, { transaction: t });
+        if (updatedMarriage.status !== 'confirmed') {
+            await t.rollback();
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to update marriage status'
+            });
+        }
+
+        // Update both members' marital status and link them as spouses
+        await Promise.all([
+            Member.update(
+                { 
+                    marital_status: 'married',
+                    spouse_id: marriage.wife_id
                 },
-                transaction: t
-            }
-        );
+                {
+                    where: { id: marriage.husband_id },
+                    transaction: t
+                }
+            ),
+            Member.update(
+                { 
+                    marital_status: 'married',
+                    spouse_id: marriage.husband_id
+                },
+                {
+                    where: { id: marriage.wife_id },
+                    transaction: t
+                }
+            )
+        ]);
 
         await t.commit();
         res.status(200).json({
             success: true,
-            message: 'Marriage confirmed successfully'
+            message: 'Marriage confirmed successfully',
+            confirmedBy: confirmingMemberId === marriage.husband_id ? 'husband' : 'wife'
         });
     } catch (error) {
         await t.rollback();
@@ -680,5 +606,724 @@ router.put('/marriage/:id/confirm', async (req, res) => {
         });
     }
 });
+
+router.get('/unmarried/:gender', async (req, res) => {
+    try {
+      const { gender } = req.params;
+      
+      // Find members of the specified gender who are either:
+      // - Single OR
+      // - Marked as married but not linked to anyone
+      const potentialSpouses = await Member.findAll({
+        where: {
+          gender: gender,
+          [Op.or]: [
+            { marital_status: 'single' },
+            {
+              marital_status: 'married',
+              id: {
+                [Op.notIn]: sequelize.literal(`
+                  (SELECT husband_id FROM marriages WHERE status = 'confirmed'
+                  UNION 
+                  SELECT wife_id FROM marriages WHERE status = 'confirmed')
+                `)
+              }
+            }
+          ],
+          deceased: false
+        },
+        attributes: ['id', 'first_name', 'last_name', 'gender'],
+        include: [{
+          model: ParentId,
+          as: 'parentId',
+          attributes: ['parent_id']
+        }]
+      });
+  
+      res.status(200).json({ success: true, data: potentialSpouses });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Server Error' });        
+    }
+  });
+
+  // Get pending marriage requests for a specific member
+router.get('/marriage-requests/:memberId', protect, async (req, res) => {
+    try {
+      const memberId = req.params.memberId;
+      
+      // Find pending marriage requests where the member is either husband or wife
+      const pendingRequests = await Marriage.findAll({
+        where: {
+          [Op.or]: [
+            { husband_id: memberId },
+            { wife_id: memberId }
+          ],
+          status: 'pending'
+        },
+        include: [
+          {
+            model: Member,
+            as: 'husband',
+            attributes: ['id', 'first_name', 'last_name', 'profile_image']
+          },
+          {
+            model: Member,
+            as: 'wife',
+            attributes: ['id', 'first_name', 'last_name', 'profile_image']
+          }
+        ]
+      });
+      
+      res.status(200).json({
+        success: true,
+        data: pendingRequests
+      });
+    } catch (error) {
+      console.error('Error fetching marriage requests:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server Error'
+      });
+    }
+  });
+
+
+
+// router.put('/marriage/:id/confirm', async (req, res) => {
+//     // Existing code for marriage confirmation
+//     const t = await sequelize.transaction();
+
+//     try {
+//         const marriage = await Marriage.findByPk(req.params.id);
+//         if (!marriage) {
+//             await t.rollback();
+//             return res.status(404).json({
+//                 success: false,
+//                 message: 'Marriage record not found'
+//             });
+//         }
+
+//         if (marriage.status === 'confirmed') {
+//             await t.rollback();
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Marriage is already confirmed'
+//             });
+//         }
+
+//         //Update marriage status
+//         await marriage.update({
+//             status: 'confirmed'
+//         }, { transaction: t });
+
+//         //Update both members' marital status
+//         await Member.update(
+//             { marital_status: 'married' },
+//             {
+//                 where: {
+//                     id: { [Op.in]: [marriage.husband_id, marriage.wife_id] }
+//                 },
+//                 transaction: t
+//             }
+//         );
+
+//         await t.commit();
+//         res.status(200).json({
+//             success: true,
+//             message: 'Marriage confirmed successfully'
+//         });
+//     } catch (error) {
+//         await t.rollback();
+//         console.error(error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// });
+
+router.get('/:id/relationships', async (req, res) => {
+    try {
+      const memberId = parseInt(req.params.id);
+      
+      // Get the member with their details
+      const member = await Member.findByPk(memberId);
+      
+      if (!member) {
+        return res.status(404).json({
+          success: false,
+          message: 'Member not found'
+        });
+      }
+      
+      // Find spouse (could be husband or wife)
+      let spouse = null;
+      const asHusband = await Marriage.findOne({
+        where: { husband_id: memberId, status: 'confirmed' },
+        include: [{ model: Member, as: 'wife' }]
+      });
+      
+      const asWife = await Marriage.findOne({
+        where: { wife_id: memberId, status: 'confirmed' },
+        include: [{ model: Member, as: 'husband' }]
+      });
+      
+      if (asHusband) {
+        spouse = asHusband.wife;
+        // Add marriage date to spouse
+        spouse.dataValues.marriage_date = asHusband.marriage_date;
+      } else if (asWife) {
+        spouse = asWife.husband;
+        // Add marriage date to spouse
+        spouse.dataValues.marriage_date = asWife.marriage_date;
+      }
+      
+      // Find children
+      const fatherChildren = await Member.findAll({
+        where: { father_id: memberId }
+      });
+      
+      const motherChildren = await Member.findAll({
+        where: { mother_id: memberId }
+      });
+      
+      // Combine unique children
+      const childrenMap = new Map();
+      [...fatherChildren, ...motherChildren].forEach(child => {
+        childrenMap.set(child.id, child);
+      });
+      
+      const children = Array.from(childrenMap.values());
+      
+      // Find parents
+      const parents = [];
+      
+      if (member.father_id) {
+        const father = await Member.findByPk(member.father_id);
+        if (father) parents.push(father);
+      }
+      
+      if (member.mother_id) {
+        const mother = await Member.findByPk(member.mother_id);
+        if (mother) parents.push(mother);
+      }
+      
+      // Get pending marriage requests if any
+      const pendingMarriageRequests = [];
+      if (member.gender === 'male') {
+        const requests = await Marriage.findAll({
+          where: { 
+            husband_id: memberId,
+            status: 'pending'
+          },
+          include: [{ model: Member, as: 'wife' }]
+        });
+        
+        requests.forEach(request => {
+          pendingMarriageRequests.push({
+            id: request.id,
+            request_id: request.id,
+            requester: request.wife,
+            requestee_id: memberId,
+            status: request.status,
+            created_at: request.createdAt
+          });
+        });
+      } else {
+        const requests = await Marriage.findAll({
+          where: { 
+            wife_id: memberId,
+            status: 'pending'
+          },
+          include: [{ model: Member, as: 'husband' }]
+        });
+        
+        requests.forEach(request => {
+          pendingMarriageRequests.push({
+            id: request.id,
+            request_id: request.id,
+            requester: request.husband,
+            requestee_id: memberId,
+            status: request.status,
+            created_at: request.createdAt
+          });
+        });
+      }
+      
+      // Add pending marriage requests to member
+      member.dataValues.pending_marriage_requests = pendingMarriageRequests;
+      
+      // Format and return the data
+      return res.json({
+        success: true,
+        data: {
+          member,
+          spouse,
+          children,
+          parents
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error fetching relationships:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  });
+
+// router.get('/:id/relationships', async (req, res) => {
+//     const t = await sequelize.transaction();
+
+//     try {
+//         const memberId = req. params.id;
+
+//         const member = await Member.findByPk(memberId, {
+//             include: [
+//                 {
+//                     model: ParentId,
+//                     as: 'parentId',
+//                     attributes: ['parent_id']
+//                 },
+//                 {
+//                     model: Member,
+//                     as: 'spouse',
+//                     through: {
+//                         model: Marriage,
+//                         where: { status: 'confirmed' }
+//                     },
+//                     attributes: [ 'id', 'first_name', 'last_name', 'gender', 'dob', 'profile_image' ],
+//                     include: [{
+//                         model: ParentId,
+//                         as: 'parentId',
+//                         attributes: ['parent_id']
+//                     }]
+//                 }
+//             ],
+//             transaction: t
+//         });
+
+//         if (!member) {
+//             await t.rollback();
+//             return res.status(404).json({
+//                 success: 'false',
+//                 message: 'Member not found'
+//             });
+//         }
+
+//         //Find children where member is either father or mother
+//         const children = await Member.findAll({
+//             where: {
+//                 [Op.or]: [
+//                     { father_id: memberId },
+//                     { mother_id: memberId }
+//                 ]
+//             },
+//             attributes: ['id', 'first_name', 'last_name', 'gender', 'dob', 'profile_image' ],
+//             include: [{
+//                 model: ParentId,
+//                 as: 'parentId',
+//                 attributes: ['parent_id']
+//             }],
+//             transaction: t
+//         });
+
+//         //Get parent if they exist
+//         const parents = await Member.findAll({
+//             where: {
+//                 id: {
+//                     [Op.in]: [member.father_id, member.mother_id].filter(Boolean)
+//                 }
+//             },
+//             attributes: ['id', 'first_name', 'last_name', 'gender', 'date_of_birth', 'profile_image'],
+//             include: [{
+//                 model: ParentId,
+//                 as: 'parentId',
+//                 attributes: ['parent_id']
+//             }],
+//             transaction: t
+//         });
+
+//         await t.commit();
+
+//         res.status(200).json({
+//             success: true,
+//             data: {
+//                 member: {
+//                     id: member.id,
+//                     first_name: member.first_name,
+//                     last_name: member.last_name,
+//                     gender: member.gender,
+//                     dob: member.dob,
+//                     profile_image: member.profile_image,
+//                     parent_id: member.parentId?.parent_id
+//                 },
+//                 spouse: member.spouse?.[0] || null,
+//                 children: children,
+//                 parents: parents
+//             }
+//         });
+
+//      } catch (error) {
+//         await t.rollback();
+//         console.error('Error fetching relationships:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// });
+
+// router to handle divorce
+
+router.put('/marriage/:id/divorce', protect, adminOnly, async (req, res) => {
+    const t = await sequelize.transaction();
+    
+    try {
+        const { divorce_date } = req.body;
+        if (!divorce_date) {
+            throw new Error('Divorce date is required');
+        }
+
+        const marriage = await Marriage.findByPk(req.params.id, {
+            include: ['husband', 'wife']
+        });
+
+        if (!marriage || marriage.status !== 'confirmed') {
+            throw new Error('Active marriage not found');
+        }
+
+        // Update marriage record
+        await marriage.update({
+            status: 'divorced',
+            divorce_date: divorce_date
+        }, { transaction: t });
+
+        // Update both members' status
+        await Promise.all([
+            Member.update(
+                { 
+                    marital_status: 'divorced',
+                    spouse_id: null 
+                },
+                { 
+                    where: { id: marriage.husband_id },
+                    transaction: t
+                }
+            ),
+            Member.update(
+                { 
+                    marital_status: 'divorced',
+                    spouse_id: null
+                },
+                { 
+                    where: { id: marriage.wife_id },
+                    transaction: t
+                }
+            )
+        ]);
+
+        await t.commit();
+        res.status(200).json({
+            success: true,
+            message: 'Divorce recorded successfully'
+        });
+    } catch (error) {
+        await t.rollback();
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// router to handle divorce
+router.put('/marriage/:id/death', protect, adminOnly, async (req, res) => {
+    const t = await sequelize.transaction();
+    
+    try {
+        const { deceased_member_id, death_date } = req.body;
+        if (!deceased_member_id || !death_date) {
+            throw new Error('Deceased member ID and death date are required');
+        }
+
+        const marriage = await Marriage.findByPk(req.params.id, {
+            include: ['husband', 'wife']
+        });
+
+        if (!marriage || marriage.status !== 'confirmed') {
+            throw new Error('Active marriage not found');
+        }
+
+        // Verify deceased member is part of the marriage
+        if (deceased_member_id !== marriage.husband_id && 
+            deceased_member_id !== marriage.wife_id) {
+            throw new Error('Deceased member is not part of this marriage');
+        }
+
+        // Get surviving spouse ID
+        const surviving_spouse_id = deceased_member_id === marriage.husband_id 
+            ? marriage.wife_id 
+            : marriage.husband_id;
+
+        // Update marriage record
+        await marriage.update({
+            status: 'widowed',
+            death_date: death_date,
+            deceased_spouse_id: deceased_member_id
+        }, { transaction: t });
+
+        // Update deceased member's status
+        await Member.update(
+            { 
+                deceased: true,
+                death_date: death_date,
+                marital_status: 'deceased',
+                spouse_id: null
+            },
+            { 
+                where: { id: deceased_member_id },
+                transaction: t
+            }
+        );
+
+        // Update surviving spouse's status
+        await Member.update(
+            { 
+                marital_status: 'widowed',
+                spouse_id: null
+            },
+            { 
+                where: { id: surviving_spouse_id },
+                transaction: t
+            }
+        );
+
+        await t.commit();
+        res.status(200).json({
+            success: true,
+            message: 'Death recorded successfully'
+        });
+    } catch (error) {
+        await t.rollback();
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+
+
+// Get pending marriage requests for a member
+router.get('/members/:id/marriage-requests', protect, async (req, res) => {
+    try {
+      const memberId = req.params.id;
+      
+      // Query for pending marriage requests
+      // Fixed: Changed db.query to use Sequelize instead
+      const pendingRequests = await sequelize.query(
+        `SELECT mr.*, 
+          r.first_name as requester_first_name, r.last_name as requester_last_name,
+          e.first_name as requestee_first_name, e.last_name as requestee_last_name
+        FROM marriage_requests mr
+        JOIN members r ON mr.requester_id = r.id
+        JOIN members e ON mr.requestee_id = e.id
+        WHERE mr.requestee_id = :memberId AND mr.status = 'pending'`,
+        {
+          replacements: { memberId },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      
+      // Format the response
+      const formattedRequests = pendingRequests.map(req => ({
+        id: req.id,
+        requester_id: req.requester_id,
+        requestee_id: req.requestee_id,
+        status: req.status,
+        created_at: req.created_at,
+        requester: {
+          id: req.requester_id,
+          first_name: req.requester_first_name,
+          last_name: req.requester_last_name
+        },
+        requestee: {
+          id: req.requestee_id,
+          first_name: req.requestee_first_name,
+          last_name: req.requestee_last_name
+        }
+      }));
+      
+      res.json({
+        success: true,
+        data: formattedRequests
+      });
+    } catch (error) {
+      console.error('Error fetching marriage requests:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch marriage requests'
+      });
+    }
+});
+  
+  // Send a marriage request
+  router.post('/members/marriage-request', protect, async (req, res) => {
+    try {
+      const { requester_id, requestee_id } = req.body;
+      
+      // Validate request
+      if (!requester_id || !requestee_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Both requester_id and requestee_id are required'
+        });
+      }
+      
+      // Check if there's already a pending request
+      // Fixed: Changed db.query to use Sequelize instead
+      const existingRequest = await sequelize.query(
+        `SELECT * FROM marriage_requests 
+         WHERE ((requester_id = :requesterId AND requestee_id = :requesteeId) 
+         OR (requester_id = :requesteeId AND requestee_id = :requesterId))
+         AND status = 'pending'`,
+        {
+          replacements: { requesterId: requester_id, requesteeId: requestee_id },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      
+      if (existingRequest.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'A marriage request already exists between these members'
+        });
+      }
+      
+      // Create the marriage request
+      // Fixed: Changed db.query to use Sequelize instead
+      const result = await sequelize.query(
+        `INSERT INTO marriage_requests (requester_id, requestee_id, status, created_at)
+         VALUES (:requesterId, :requesteeId, 'pending', NOW())`,
+        {
+          replacements: { requesterId: requester_id, requesteeId: requestee_id },
+          type: sequelize.QueryTypes.INSERT
+        }
+      );
+      
+      res.json({
+        success: true,
+        data: {
+          id: result[0], // Sequelize returns the inserted ID as the first element
+          requester_id,
+          requestee_id,
+          status: 'pending',
+          created_at: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('Error creating marriage request:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create marriage request'
+      });
+    }
+});
+  
+  
+  // Respond to a marriage request
+  router.put('/members/marriage-request/:id', protect, async (req, res) => {
+    try {
+      const requestId = req.params.id;
+      const { status } = req.body;
+      
+      if (status !== 'approved' && status !== 'rejected') {
+        return res.status(400).json({
+          success: false,
+          message: 'Status must be either "approved" or "rejected"'
+        });
+      }
+      
+      // Get the marriage request
+      // Fixed: Changed db.query to use Sequelize instead
+      const [request] = await sequelize.query(
+        'SELECT * FROM marriage_requests WHERE id = :requestId',
+        {
+          replacements: { requestId },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      
+      if (!request) {
+        return res.status(404).json({
+          success: false,
+          message: 'Marriage request not found'
+        });
+      }
+      
+      // Update the request status
+      // Fixed: Changed db.query to use Sequelize instead
+      await sequelize.query(
+        'UPDATE marriage_requests SET status = :status, updated_at = NOW() WHERE id = :requestId',
+        {
+          replacements: { status, requestId },
+          type: sequelize.QueryTypes.UPDATE
+        }
+      );
+      
+      let marriageId = null;
+      
+      // If approved, create a marriage record
+      if (status === 'approved') {
+        // Get gender information to determine husband_id and wife_id
+        const [requester] = await db.query('SELECT gender FROM members WHERE id = ?', [request.requester_id]);
+        const [requestee] = await db.query('SELECT gender FROM members WHERE id = ?', [request.requestee_id]);
+        
+        let husband_id, wife_id;
+        
+        if (requester.gender === 'male') {
+          husband_id = request.requester_id;
+          wife_id = request.requestee_id;
+        } else {
+          husband_id = request.requestee_id;
+          wife_id = request.requester_id;
+        }
+        
+        // Create the marriage record
+        const marriageResult = await db.query(
+          `INSERT INTO marriages (husband_id, wife_id, marriage_date, status, created_at)
+           VALUES (?, ?, NOW(), 'confirmed', NOW())`,
+          [husband_id, wife_id]
+        );
+        
+        marriageId = marriageResult.insertId;
+        
+        // Update both members' marital status
+        await db.query(
+          'UPDATE members SET marital_status = "Married", updated_at = NOW() WHERE id IN (?, ?)',
+          [request.requester_id, request.requestee_id]
+        );
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          id: requestId,
+          status,
+          marriage_id: marriageId
+        }
+      });
+    } catch (error) {
+      console.error('Error processing marriage request:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to process marriage request'
+      });
+    }
+  });
 
 module.exports = router;

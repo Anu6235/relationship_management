@@ -1,0 +1,98 @@
+<div *ngIf="isVisible" class="modal-wrapper">
+  <!-- Modal overlay -->
+  <div class="modal-overlay"></div>
+
+  <!-- Modal content -->
+  <div class="modal-container">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="text-xl font-semibold">Marriage Request</h3>
+        <button type="button" class="close-button" (click)="onCancel()">
+          ×
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Displaying the pending marriage request -->
+        <div
+          *ngIf="pendingMarriageRequest && partnerMember"
+          class="text-center"
+        >
+          <div class="flex items-center justify-center mb-4">
+            <div class="flex flex-col items-center">
+              <div
+                class="relative w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500"
+              >
+                <img
+                  [src]="
+                    partnerMember?.profile_image_url ||
+                    'assets/img/default-profile.png'
+                  "
+                  alt="Profile Image"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <span class="mt-2 font-medium">
+                {{ partnerMember?.first_name }}
+                {{ partnerMember?.last_name }}
+              </span>
+            </div>
+          </div>
+
+          <p class="text-center mb-6">
+            <span *ngIf="!isProposer">
+              <span class="font-semibold">
+                {{ partnerMember?.first_name }} {{ partnerMember?.last_name }}
+              </span>
+              would like to confirm you as their spouse. Do you want to accept
+              this marriage request?
+            </span>
+            <span *ngIf="isProposer">
+              You have requested to marry
+              <span class="font-semibold">
+                {{ partnerMember?.first_name }}
+                {{ partnerMember?.last_name }} </span
+              >. Awaiting their response.
+            </span>
+          </p>
+
+          <div class="flex justify-center space-x-4">
+            <button type="button" class="bg-gray-500" (click)="onCancel()">
+              Cancel
+            </button>
+            <button
+              *ngIf="!isProposer"
+              type="button"
+              class="bg-green-600"
+              (click)="confirmMarriage()"
+              [disabled]="loading"
+            >
+              Accept Marriage
+            </button>
+            <button *ngIf="isProposer" class="bg-gray-400" disabled>
+              Awaiting Response
+            </button>
+          </div>
+        </div>
+
+        <!-- Display message when no pending request is available -->
+        <div
+          *ngIf="!pendingMarriageRequest && !loading"
+          class="text-center mb-6 mt-4"
+        >
+          <p>No pending marriage requests found.</p>
+          <button type="button" class="mt-4 bg-blue-600" (click)="onCancel()">
+            Close
+          </button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div *ngIf="loading" class="flex justify-center my-6">
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
