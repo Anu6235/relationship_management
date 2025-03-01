@@ -1,3 +1,4 @@
+<!-- App config -->
 <div class="container-fluid">
   <div class="container-fluid">
     <div class="card">
@@ -59,6 +60,219 @@
               class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
             >
               {{ isSubmitting ? "Saving..." : "Save Configuration" }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ledger config -->
+<div class="container-fluid">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-body">
+        <div class="container mx-auto p-4">
+          <h2 class="text-2xl font-bold">Ledger Configuration</h2>
+
+          <form [formGroup]="ledgerForm" class="max-w-lg">
+            <div class="mb-4">
+              <label class="block mb-2">Ledger Type</label>
+              <select
+                formControlName="ledgerTypeId"
+                class="w-full p-2 border rounded"
+                (change)="onLedgerTypeChange($event)"
+              >
+                <option *ngFor="let type of ledgerTypes" [value]="type.id">
+                  {{ type.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="mb-4">
+              <label class="block mb-2">Description</label>
+              <textarea
+                formControlName="description"
+                class="w-full p-2 border rounded"
+                rows="3"
+              ></textarea>
+            </div>
+
+            <!-- Amount and Fee  -->
+            <div class="mb-4">
+              <div class="flex items-center gap-2">
+                <div class="flex-1">
+                  <label class="block mb-2">Amount</label>
+                  <div class="border rounded overflow-hidden">
+                    <input
+                      type="number"
+                      formControlName="amount"
+                      class="w-full p-2 border-0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <label class="block mb-2">Fee (After due date)</label>
+                  <div class="border rounded overflow-hidden">
+                    <input
+                      type="number"
+                      formControlName="fee"
+                      class="w-full p-2 border-0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block mb-2">Due Date</label>
+              <input
+                type="date"
+                formControlName="dueDate"
+                class="w-full p-2 border rounded"
+              />
+            </div>
+
+            <!-- Interval -->
+            <div class="mb-4">
+              <label class="block mb-2">Interval</label>
+              <div class="flex items-center gap-2">
+                <div class="flex-1">
+                  <div class="border rounded overflow-hidden">
+                    <input
+                      type="number"
+                      formControlName="durationValue"
+                      class="w-full p-2 border-0"
+                      min="1"
+                    />
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <div class="border rounded overflow-hidden">
+                    <select
+                      formControlName="durationUnit"
+                      class="w-full p-2 border-0"
+                    >
+                      <option value="minute">Minute(s)</option>
+                      <option value="hour">Hour(s)</option>
+                      <option value="day">Day(s)</option>
+                      <option value="month">Month(s)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <p class="text-sm text-gray-500 mt-1">
+                When enabled, ledgers will be created at this interval
+              </p>
+            </div>
+            <!-- Filter Conditions -->
+            <div class="mb-4">
+              <div class="flex items-center justify-between mb-2">
+                <label class="block">Filter Conditions</label>
+                <button
+                  type="button"
+                  class="w-5 h-5 rounded-md bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors"
+                  (click)="addCondition()"
+                >
+                  <span class="text font-medium">+</span>
+                </button>
+              </div>
+              <div formArrayName="conditions">
+                <div
+                  *ngFor="let condition of conditions.controls; let i = index"
+                  [formGroupName]="i"
+                  class="mb-2"
+                >
+                  <div class="flex items-center gap-2">
+                    <div class="flex-1">
+                      <div class="border rounded overflow-hidden">
+                        <select
+                          formControlName="field"
+                          class="w-full p-2 border-0"
+                        >
+                          <option
+                            *ngFor="let field of memberFields"
+                            [value]="field.value"
+                          >
+                            {{ field.label }}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="flex-1">
+                      <div class="border rounded overflow-hidden">
+                        <select
+                          formControlName="value"
+                          class="w-full p-2 border-0"
+                        >
+                          <option
+                            *ngFor="
+                              let option of getFieldOptions(
+                                condition.get('field')?.value
+                              )
+                            "
+                            [value]="option"
+                          >
+                            {{ option }}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="flex-shrink-0 w-8 h-8 rounded-md bg-gray-300 text-gray-700 flex items-center justify-center hover:bg-gray-400"
+                      (click)="removeCondition(i)"
+                    >
+                      <span class="text-xl">−</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Toggle switch -->
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <label class="block font-medium text-lg"
+                  >Automatic Ledger Creation</label
+                >
+                <p class="text-sm text-gray-500">
+                  {{
+                    ledgerForm.get("isActive")?.value
+                      ? "ON - Ledgers will be created automatically"
+                      : "OFF - No automatic ledger creation"
+                  }}
+                </p>
+              </div>
+              <div class="relative inline-block w-16 align-middle">
+                <input
+                  type="checkbox"
+                  formControlName="isActive"
+                  id="toggle"
+                  class="sr-only"
+                  (change)="updateLedgerStatus()"
+                />
+                <label
+                  for="toggle"
+                  class="toggle-label block h-8 rounded-full bg-gray-300 cursor-pointer transition-colors duration-200 ease-in-out"
+                  [ngClass]="{
+                    'bg-green-500': ledgerForm.get('isActive')?.value
+                  }"
+                ></label>
+              </div>
+            </div>
+
+            <!-- Save button for other settings -->
+            <button
+              type="button"
+              [disabled]="ledgerForm.invalid || isSubmitting"
+              class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+              (click)="updateLedgerStatus()"
+            >
+              {{ isSubmitting ? "Saving..." : "Save Settings" }}
             </button>
           </form>
         </div>

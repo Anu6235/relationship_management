@@ -7,6 +7,8 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const memberRoutes = require('./routes/memberRoutes');
 const appConfigRouter = require('./routes/appConfig');
+const ledgerRoutes = require('./routes/ledgerRoutes');
+const ledgerTypeRoutes = require('./routes/ledgerTypeRoutes');
 
 require('dotenv').config();
 
@@ -23,13 +25,14 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+
 app.use('/users', usersRouter);
-
-
 app.use('/api/auth', authRoutes);
 app.use('/api/members', memberRoutes);
-
 app.use('/api/app-config', appConfigRouter);
+app.use('/api/ledgers', ledgerRoutes);
+app.use('/api/ledger-types', ledgerTypeRoutes);
+
 
 app.use('*', (req, res) => {
     res.status(404).json({

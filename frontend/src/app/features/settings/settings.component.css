@@ -1,0 +1,22 @@
+.toggle-label {
+    position: relative;
+    display: block;
+    width: 4rem;
+    transition: background-color 0.2s ease;
+  }
+  
+  .toggle-label:after {
+    content: '';
+    position: absolute;
+    top: 0.25rem;
+    left: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+  }
+  
+  input:checked + .toggle-label:after {
+    transform: translateX(2rem);
+  }

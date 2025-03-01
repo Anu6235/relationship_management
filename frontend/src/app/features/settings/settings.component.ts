@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AppConfigService } from '../../core/services/app-config.service';
 import { ToastrService } from 'ngx-toastr';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { LedgerType, MemberField } from '../../core/models/ledger';
+import { LedgerService } from '../../core/services/ledger.service';
+import { Subscription, interval } from 'rxjs';
 
 @Component({
   selector: 'app-settings',
@@ -12,17 +14,32 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css']
 })
-export class SettingsComponent implements OnInit{
+export class SettingsComponent implements OnInit, OnDestroy {
   configForm: FormGroup;
+  ledgerForm: FormGroup;
+
   selectedFile: File | null = null;
   previewUrl: string | null = null;
   isSubmitting = false;
   successMessage: string | null = null;
   errorMessage: string | null = null;
 
+  ledgerTypes: LedgerType[] = [];
+  memberFields: MemberField[] = [
+    { label: 'Marital Status', value: 'marital_status', options: ['single', 'married', 'divorced', 'widowed'] },
+    { label: 'Gender', value: 'gender', options: ['male', 'female', 'other'] },
+    { label: 'Status', value: 'status', options: ['active', 'inactive', 'suspended'] },
+    { label: 'Deceased', value: 'deceased', options: ['yes', 'no'] }
+  ];
+
+  // For interval timer
+  private ledgerCreationSubscription?: Subscription;
+  private lastLedgerCreationTime: { [key: number]: Date } = {};
+
   constructor(
     private fb: FormBuilder,
     private appConfigService: AppConfigService,
+    private ledgerService: LedgerService,
     private toastr: ToastrService
   ) {
     this.configForm = this.fb.group({
@@ -30,10 +47,37 @@ export class SettingsComponent implements OnInit{
       email: ['', [Validators.required, Validators.email]],
       contact: ['', Validators.required]
     });
+
+    this.ledgerForm = this.fb.group({
+      ledgerTypeId: [null, Validators.required],
+      description: ['', Validators.required],
+      amount: [0, [Validators.required, Validators.min(0)]],
+      fee: [0, [Validators.required, Validators.min(0)]],
+      dueDate: [new Date().toISOString().split('T')[0], Validators.required],
+      durationValue: [30, [Validators.required, Validators.min(1)]],
+      durationUnit: ['day', Validators.required],
+      conditions: this.fb.array([this.createCondition()]),
+      isActive: [false] // Default to OFF
+    });
   }
 
   ngOnInit() {
     this.loadCurrentConfig();
+    this.loadLedgerTypes();
+
+    // Setup listener for the isActive toggle
+    this.ledgerForm.get('isActive')?.valueChanges.subscribe(isActive => {
+      const typeId = this.ledgerForm.get('ledgerTypeId')?.value;
+      if (isActive) {
+        this.startLedgerCreation(typeId);
+      } else {
+        this.stopLedgerCreation();
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.stopLedgerCreation();
   }
 
   loadCurrentConfig() {
@@ -97,5 +141,307 @@ export class SettingsComponent implements OnInit{
         }
       });
     }
+  }
+
+  get conditions() {
+    return this.ledgerForm.get('conditions') as FormArray;
+  }
+
+  createCondition() {
+    return this.fb.group({
+      field: ['marital_status', Validators.required],
+      value: ['married', Validators.required]
+    });
+  }
+
+  addCondition() {
+    this.conditions.push(this.createCondition());
+  }
+
+  removeCondition(index: number) {
+    this.conditions.removeAt(index);
+  }
+
+  getFieldOptions(fieldName: string): string[] {
+    const field = this.memberFields.find(f => f.value === fieldName);
+    return field?.options || [];
+  }
+
+  loadLedgerTypes() {
+    this.ledgerService.getAllLedgerTypes().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.ledgerTypes = response.data;
+          
+          // If ledger types exist, select the first one and load its details
+          if (this.ledgerTypes.length > 0) {
+            const firstType = this.ledgerTypes[0];
+            this.ledgerForm.patchValue({
+              ledgerTypeId: firstType.id,
+              description: firstType.description,
+              amount: firstType.amount,
+              durationValue: firstType.duration_value,
+              durationUnit: firstType.duration_unit,
+              isActive: firstType.is_active
+            });
+
+            // Parse condition_config if it exists
+            if (firstType.condition_config) {
+              this.loadConditions(firstType.condition_config);
+            }
+
+            // If the selected ledger type is active, start the ledger creation process
+            if (firstType.is_active) {
+              this.startLedgerCreation(firstType.id);
+            }
+          }
+        }
+      },
+      error: (error) => {
+        console.error('Error loading ledger types:', error);
+        this.toastr.error('Failed to load ledger types', 'Error');
+      }
+    });
+  }
+
+  loadConditions(conditionConfig: any) {
+    // Clear existing conditions except the first one
+    while (this.conditions.length > 0) {
+      this.conditions.removeAt(0);
+    }
+
+    // Add conditions from config
+    Object.entries(conditionConfig).forEach(([field, value]) => {
+      this.conditions.push(
+        this.fb.group({
+          field: [field, Validators.required],
+          value: [value, Validators.required]
+        })
+      );
+    });
+
+    // If no conditions were added, create an empty one
+    if (this.conditions.length === 0) {
+      this.addCondition();
+    }
+  }
+
+  onLedgerTypeChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const typeId = parseInt(select.value, 10);
+    
+    // Stop any existing timers
+    this.stopLedgerCreation();
+    
+    if (typeId) {
+      this.ledgerService.getLedgerTypeById(typeId).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const ledgerType = response.data;
+            this.ledgerForm.patchValue({
+              description: ledgerType.description,
+              amount: ledgerType.amount,
+              durationValue: ledgerType.duration_value,
+              durationUnit: ledgerType.duration_unit,
+              isActive: ledgerType.is_active
+            });
+
+            if (ledgerType.condition_config) {
+              this.loadConditions(ledgerType.condition_config);
+            }
+
+            // If the selected ledger type is active, start the ledger creation process
+            if (ledgerType.is_active) {
+              this.startLedgerCreation(typeId);
+            }
+          }
+        },
+        error: (error) => {
+          console.error('Error loading ledger type details:', error);
+        }
+      });
+    }
+  }
+
+  // Called when toggle is switched
+  updateLedgerStatus() {
+    if (this.ledgerForm.valid) {
+      this.isSubmitting = true;
+      
+      // Convert form values to match LedgerType interface
+      const conditionConfig: any = {};
+      this.conditions.controls.forEach(control => {
+        const field = control.get('field')?.value;
+        const value = control.get('value')?.value;
+        if (field && value) {
+          conditionConfig[field] = value;
+        }
+      });
+
+      const typeId = this.ledgerForm.get('ledgerTypeId')?.value;
+      const isActive = this.ledgerForm.get('isActive')?.value;
+      
+      const ledgerTypeData: Partial<LedgerType> = {
+        description: this.ledgerForm.get('description')?.value,
+        amount: this.ledgerForm.get('amount')?.value,
+        is_active: isActive,
+        duration_value: this.ledgerForm.get('durationValue')?.value,
+        duration_unit: this.ledgerForm.get('durationUnit')?.value,
+        condition_config: conditionConfig
+      };
+
+      this.ledgerService.updateLedgerType(typeId, ledgerTypeData).subscribe({
+        next: (response) => {
+          if (response.success) {
+            // Status message based on toggle state
+            const statusMessage = isActive ? 
+              'Ledger creation enabled. Ledgers will be generated according to the schedule.' : 
+              'Ledger creation disabled.';
+            
+            this.toastr.success(statusMessage, 'Status Updated');
+            
+            // If we're turning it on, create a ledger immediately
+            if (isActive) {
+              this.generateLedgers(typeId);
+            }
+          } else {
+            this.toastr.error('Failed to update ledger status', 'Error');
+          }
+        },
+        error: (error) => {
+          console.error('Error updating ledger status:', error);
+          this.toastr.error('Error updating ledger status', 'Error');
+        },
+        complete: () => {
+          this.isSubmitting = false;
+        }
+      });
+    }
+  }
+
+  generateLedgers(ledgerTypeId: number) {
+    // Check if we've recently created a ledger for this type to prevent duplicates
+    const now = new Date();
+    const lastCreated = this.lastLedgerCreationTime[ledgerTypeId];
+    
+    if (lastCreated) {
+      const durationValue = this.ledgerForm.get('durationValue')?.value || 30;
+      const durationUnit = this.ledgerForm.get('durationUnit')?.value || 'day';
+      
+      let minimumInterval = 0; // Milliseconds
+      
+      switch (durationUnit) {
+        case 'minute':
+          minimumInterval = durationValue * 60 * 1000;
+          break;
+        case 'hour':
+          minimumInterval = durationValue * 60 * 60 * 1000;
+          break;
+        case 'day':
+          minimumInterval = durationValue * 24 * 60 * 60 * 1000;
+          break;
+        case 'month':
+          // Approximate a month as 30 days
+          minimumInterval = durationValue * 30 * 24 * 60 * 60 * 1000;
+          break;
+      }
+      
+      const elapsed = now.getTime() - lastCreated.getTime();
+      
+      if (elapsed < minimumInterval) {
+        this.toastr.info(`Ledger creation skipped - next creation in ${Math.ceil((minimumInterval - elapsed) / (60 * 1000))} minutes`, 'Information');
+        return;
+      }
+    }
+    
+    this.ledgerService.generateLedgers(ledgerTypeId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          // Update the last creation time for this ledger type
+          this.lastLedgerCreationTime[ledgerTypeId] = new Date();
+          this.toastr.success('Ledgers generated successfully!', 'Success');
+        } else {
+          this.toastr.warning('Failed to generate ledgers', 'Warning');
+        }
+      },
+      error: (error) => {
+        console.error('Error generating ledgers:', error);
+        this.toastr.error('Error generating ledgers', 'Error');
+      }
+    });
+  }
+
+  startLedgerCreation(ledgerTypeId: number) {
+    // Stop any existing timer
+    this.stopLedgerCreation();
+    
+    // Convert the interval to milliseconds for timer
+    const durationValue = this.ledgerForm.get('durationValue')?.value || 30;
+    const durationUnit = this.ledgerForm.get('durationUnit')?.value || 'day';
+    
+    let intervalMs = 60000; // Default to 1 minute check
+    
+    switch (durationUnit) {
+      case 'minute':
+        intervalMs = durationValue * 60 * 1000;
+        break;
+      case 'hour':
+        intervalMs = durationValue * 60 * 60 * 1000;
+        break;
+      case 'day':
+        // For longer intervals, we still check more frequently
+        // but only create when enough time has passed
+        intervalMs = Math.min(durationValue * 24 * 60 * 60 * 1000, 3600000); // Max 1 hour
+        break;
+      case 'month':
+        // For longer intervals, we still check more frequently
+        intervalMs = 3600000; // 1 hour
+        break;
+    }
+    
+    // For testing, you might want to use a shorter interval
+    const checkIntervalMs = Math.min(intervalMs, 60000); // Check at least every minute
+    
+    // Create the subscription
+    this.ledgerCreationSubscription = interval(checkIntervalMs).subscribe(() => {
+      if (this.ledgerForm.get('isActive')?.value) {
+        this.generateLedgers(ledgerTypeId);
+      } else {
+        // Stop the interval if the toggle is off
+        this.stopLedgerCreation();
+      }
+    });
+    
+    // Generate once immediately when activated
+    this.generateLedgers(ledgerTypeId);
+  }
+
+  stopLedgerCreation() {
+    if (this.ledgerCreationSubscription) {
+      this.ledgerCreationSubscription.unsubscribe();
+      this.ledgerCreationSubscription = undefined;
+    }
+  }
+
+  addNewLedgerType() {
+    // Reset form for new ledger type creation
+    this.ledgerForm.patchValue({
+      ledgerTypeId: null,
+      description: '',
+      amount: 0,
+      fee: 0,
+      durationValue: 30,
+      durationUnit: 'day',
+      isActive: false
+    });
+
+    // Reset conditions
+    while (this.conditions.length > 0) {
+      this.conditions.removeAt(0);
+    }
+    this.addCondition();
+
+    // Implementation for adding a new ledger type would go here
+    this.toastr.info('New ledger type form prepared. Fill in details and save.', 'Info');
   }
 }

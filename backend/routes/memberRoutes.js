@@ -688,61 +688,6 @@ router.get('/marriage-requests/:memberId', protect, async (req, res) => {
     }
   });
 
-
-
-// router.put('/marriage/:id/confirm', async (req, res) => {
-//     // Existing code for marriage confirmation
-//     const t = await sequelize.transaction();
-
-//     try {
-//         const marriage = await Marriage.findByPk(req.params.id);
-//         if (!marriage) {
-//             await t.rollback();
-//             return res.status(404).json({
-//                 success: false,
-//                 message: 'Marriage record not found'
-//             });
-//         }
-
-//         if (marriage.status === 'confirmed') {
-//             await t.rollback();
-//             return res.status(400).json({
-//                 success: false,
-//                 message: 'Marriage is already confirmed'
-//             });
-//         }
-
-//         //Update marriage status
-//         await marriage.update({
-//             status: 'confirmed'
-//         }, { transaction: t });
-
-//         //Update both members' marital status
-//         await Member.update(
-//             { marital_status: 'married' },
-//             {
-//                 where: {
-//                     id: { [Op.in]: [marriage.husband_id, marriage.wife_id] }
-//                 },
-//                 transaction: t
-//             }
-//         );
-
-//         await t.commit();
-//         res.status(200).json({
-//             success: true,
-//             message: 'Marriage confirmed successfully'
-//         });
-//     } catch (error) {
-//         await t.rollback();
-//         console.error(error);
-//         res.status(500).json({
-//             success: false,
-//             message: error.message
-//         });
-//     }
-// });
-
 router.get('/:id/relationships', async (req, res) => {
     try {
       const memberId = parseInt(req.params.id);
@@ -875,110 +820,7 @@ router.get('/:id/relationships', async (req, res) => {
     }
   });
 
-// router.get('/:id/relationships', async (req, res) => {
-//     const t = await sequelize.transaction();
-
-//     try {
-//         const memberId = req. params.id;
-
-//         const member = await Member.findByPk(memberId, {
-//             include: [
-//                 {
-//                     model: ParentId,
-//                     as: 'parentId',
-//                     attributes: ['parent_id']
-//                 },
-//                 {
-//                     model: Member,
-//                     as: 'spouse',
-//                     through: {
-//                         model: Marriage,
-//                         where: { status: 'confirmed' }
-//                     },
-//                     attributes: [ 'id', 'first_name', 'last_name', 'gender', 'dob', 'profile_image' ],
-//                     include: [{
-//                         model: ParentId,
-//                         as: 'parentId',
-//                         attributes: ['parent_id']
-//                     }]
-//                 }
-//             ],
-//             transaction: t
-//         });
-
-//         if (!member) {
-//             await t.rollback();
-//             return res.status(404).json({
-//                 success: 'false',
-//                 message: 'Member not found'
-//             });
-//         }
-
-//         //Find children where member is either father or mother
-//         const children = await Member.findAll({
-//             where: {
-//                 [Op.or]: [
-//                     { father_id: memberId },
-//                     { mother_id: memberId }
-//                 ]
-//             },
-//             attributes: ['id', 'first_name', 'last_name', 'gender', 'dob', 'profile_image' ],
-//             include: [{
-//                 model: ParentId,
-//                 as: 'parentId',
-//                 attributes: ['parent_id']
-//             }],
-//             transaction: t
-//         });
-
-//         //Get parent if they exist
-//         const parents = await Member.findAll({
-//             where: {
-//                 id: {
-//                     [Op.in]: [member.father_id, member.mother_id].filter(Boolean)
-//                 }
-//             },
-//             attributes: ['id', 'first_name', 'last_name', 'gender', 'date_of_birth', 'profile_image'],
-//             include: [{
-//                 model: ParentId,
-//                 as: 'parentId',
-//                 attributes: ['parent_id']
-//             }],
-//             transaction: t
-//         });
-
-//         await t.commit();
-
-//         res.status(200).json({
-//             success: true,
-//             data: {
-//                 member: {
-//                     id: member.id,
-//                     first_name: member.first_name,
-//                     last_name: member.last_name,
-//                     gender: member.gender,
-//                     dob: member.dob,
-//                     profile_image: member.profile_image,
-//                     parent_id: member.parentId?.parent_id
-//                 },
-//                 spouse: member.spouse?.[0] || null,
-//                 children: children,
-//                 parents: parents
-//             }
-//         });
-
-//      } catch (error) {
-//         await t.rollback();
-//         console.error('Error fetching relationships:', error);
-//         res.status(500).json({
-//             success: false,
-//             message: error.message
-//         });
-//     }
-// });
-
 // router to handle divorce
-
 router.put('/marriage/:id/divorce', protect, adminOnly, async (req, res) => {
     const t = await sequelize.transaction();
     
@@ -1040,7 +882,7 @@ router.put('/marriage/:id/divorce', protect, adminOnly, async (req, res) => {
     }
 });
 
-// router to handle divorce
+// router to handle death
 router.put('/marriage/:id/death', protect, adminOnly, async (req, res) => {
     const t = await sequelize.transaction();
     
