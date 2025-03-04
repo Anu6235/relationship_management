@@ -2,9 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Ledger, LedgerType, Member, User } = require('../models');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
-const { Op, where } = require('sequelize');
-const { post } = require('./memberRoutes');
-const ledger = require('../models/ledger');
+const { Op } = require('sequelize');
 
 //Get all ledgers
 router.get('/', protect, async (req, res) => {
@@ -15,9 +13,20 @@ router.get('/', protect, async (req, res) => {
                 { model: Member, as: 'member' }
             ]
         });
+        
+        // Recalculate fines for overdue ledgers
+        const updatedLedgers = await Promise.all(
+            ledgers.map(async ledger => {
+                if (ledger.invoice_status === 1 || ledger.invoice_status === 3) {
+                    return await ledger.recalculateFine(Ledger.sequelize.models);
+                }
+                return ledger;
+            })
+        );
+        
         res.status(200).json({
             success: true,
-            data: ledgers
+            data: updatedLedgers
         });
     } catch (error) {
         console.error('Error fetching ledgers:', error);
@@ -32,7 +41,7 @@ router.get('/', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
     try {
         const { id } = req.params;
-        const ledger = await Ledger.findByPk(id, {
+        let ledger = await Ledger.findByPk(id, {
             include: [
                 { model: LedgerType, as: 'ledgerType' },
                 { model: Member, as: 'member' }
@@ -44,6 +53,11 @@ router.get('/:id', protect, async (req, res) => {
                 success: false,
                 message: 'Ledger not found'
             });
+        }
+        
+        // Recalculate fine if the ledger is pending or overdue
+        if (ledger.invoice_status === 1 || ledger.invoice_status === 3) {
+            ledger = await ledger.recalculateFine(Ledger.sequelize.models);
         }
 
         res.status(200).json({
@@ -62,7 +76,7 @@ router.get('/:id', protect, async (req, res) => {
 //Create a new ledger
 router.post('/', protect, adminOnly, async (req, res) => {
     try {
-      const { ledger_type_id, member_id, due_date, amount, fee, invoice_status } = req.body;
+      const { ledger_type_id, member_id, due_date, amount, invoice_status } = req.body;
       
       // Fetch ledger type
       const ledgerType = await LedgerType.findByPk(ledger_type_id);
@@ -88,8 +102,6 @@ router.post('/', protect, adminOnly, async (req, res) => {
       const year = now.getFullYear();
       const ledger_name = `${month}-${year}-${amount}`;
       
-      const total_amount = parseFloat(amount) + parseFloat(fee);
-      
       // Calculate due date if not provided
       const invoice_date = new Date();
       const calculated_due_date = due_date || ledgerType.calculateDueDate(invoice_date);
@@ -101,8 +113,8 @@ router.post('/', protect, adminOnly, async (req, res) => {
         invoice_created_at: invoice_date,
         due_date: calculated_due_date,
         amount,
-        fee,
-        total_amount,
+        fine: 0,
+        total_amount: parseFloat(amount),
         invoice_status: invoice_status || 1
       });
       
@@ -134,7 +146,16 @@ router.put('/:id/status', protect, adminOnly, async (req, res) => {
         });
       }
       
-      await ledger.update({ invoice_status });
+      // If marking as paid, recalculate fine first and set paid_at
+      if (invoice_status === 2) {
+        await ledger.recalculateFine(Ledger.sequelize.models);
+        await ledger.update({ 
+          invoice_status,
+          paid_at: new Date()
+        });
+      } else {
+        await ledger.update({ invoice_status });
+      }
       
       res.status(200).json({
         success: true,
@@ -154,10 +175,20 @@ router.get('/member/:memberId', protect, async (req, res) => {
     try {
       const { memberId } = req.params;
       
-      const ledgers = await Ledger.findAll({
+      let ledgers = await Ledger.findAll({
         where: { member_id: memberId },
         include: [{ model: LedgerType, as: 'ledgerType' }]
       });
+      
+      // Recalculate fines for pending/overdue ledgers
+      ledgers = await Promise.all(
+        ledgers.map(async ledger => {
+          if (ledger.invoice_status === 1 || ledger.invoice_status === 3) {
+            return await ledger.recalculateFine(Ledger.sequelize.models);
+          }
+          return ledger;
+        })
+      );
       
       res.status(200).json({
         success: true,
@@ -219,7 +250,7 @@ router.post('/generate/:ledgerTypeId', protect, adminOnly, async (req, res) => {
     const year = now.getFullYear();
     const ledger_name = `${month}-${year}-${ledgerType.amount}`;
     
-    // Calculate due date based on new duration system
+    // Calculate due date based on ledger type configuration
     const due_date = ledgerType.calculateDueDate(now);
     
     const ledgerPromises = members.map(member => {
@@ -230,7 +261,7 @@ router.post('/generate/:ledgerTypeId', protect, adminOnly, async (req, res) => {
         invoice_created_at: now,
         due_date,
         amount: ledgerType.amount,
-        fee: 0, // Initial fee is 0
+        fine: 0, // Initial fine is 0
         total_amount: ledgerType.amount,
         invoice_status: 1 // Pending
       });
@@ -245,6 +276,143 @@ router.post('/generate/:ledgerTypeId', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Error generating ledgers:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Recalculate fines for all pending/overdue ledgers
+router.post('/recalculate-fines', protect, adminOnly, async (req, res) => {
+  try {
+    // Get all pending or overdue ledgers
+    const pendingLedgers = await Ledger.findAll({
+      where: {
+        invoice_status: {
+          [Op.in]: [1, 3] // Pending or Overdue
+        }
+      },
+      include: [{ model: LedgerType, as: 'ledgerType' }]
+    });
+    
+    if (pendingLedgers.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No pending or overdue ledgers found to recalculate'
+      });
+    }
+    
+    // Recalculate fines for each ledger
+    const updatedLedgers = await Promise.all(
+      pendingLedgers.map(async ledger => {
+        return await ledger.recalculateFine(Ledger.sequelize.models);
+      })
+    );
+    
+    const updatedCount = updatedLedgers.filter(
+      ledger => parseFloat(ledger.fine) > 0
+    ).length;
+    
+    res.status(200).json({
+      success: true,
+      message: `Recalculated fines for ${pendingLedgers.length} ledgers. ${updatedCount} have fines.`,
+      updatedCount
+    });
+  } catch (error) {
+    console.error('Error recalculating fines:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Pay a ledger
+router.post('/:id/pay', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ledger = await Ledger.findByPk(id);
+    
+    if (!ledger) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ledger not found'
+      });
+    }
+    
+    if (ledger.invoice_status === 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ledger has already been paid'
+      });
+    }
+    
+    if (ledger.invoice_status === 4) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot pay a cancelled ledger'
+      });
+    }
+    
+    // Recalculate fine before marking as paid
+    await ledger.recalculateFine(Ledger.sequelize.models);
+    
+    // Update the ledger status to paid
+    await ledger.update({
+      invoice_status: 2, // Paid
+      paid_at: new Date()
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Ledger paid successfully',
+      data: ledger
+    });
+  } catch (error) {
+    console.error('Error paying ledger:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Get overdue ledgers
+router.get('/overdue', protect, adminOnly, async (req, res) => {
+  try {
+    const now = new Date();
+    
+    // Find ledgers that are past their due date but not paid
+    const overdueLegers = await Ledger.findAll({
+      where: {
+        due_date: {
+          [Op.lt]: now // Due date is less than current date
+        },
+        invoice_status: {
+          [Op.in]: [1, 3] // Pending or Already marked as Overdue
+        }
+      },
+      include: [
+        { model: LedgerType, as: 'ledgerType' },
+        { model: Member, as: 'member' }
+      ]
+    });
+    
+    // Recalculate fines for all overdue ledgers
+    const updatedLedgers = await Promise.all(
+      overdueLegers.map(async ledger => {
+        return await ledger.recalculateFine(Ledger.sequelize.models);
+      })
+    );
+    
+    res.status(200).json({
+      success: true,
+      count: updatedLedgers.length,
+      data: updatedLedgers
+    });
+  } catch (error) {
+    console.error('Error fetching overdue ledgers:', error);
     res.status(500).json({
       success: false,
       message: error.message

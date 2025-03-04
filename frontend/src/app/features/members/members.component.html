@@ -22,13 +22,6 @@
       <span>Add Member</span>
     </button>
   </div>
-
-  <app-add-member-form
-    [isVisible]="isAddModalOpen"
-    (memberAdded)="addMember($event)"
-    (cancelAdd)="closeAddMemberModal()"
-  >
-  </app-add-member-form>
   <br />
 
   <div
@@ -240,7 +233,9 @@
                   [isVisible]="isMarriageConfirmationModalOpen"
                   [memberId]="selectedMemberForMarriageConfirmation?.id"
                   (modalClosed)="closeMarriageConfirmationModal()"
-                  (marriageConfirmed)="handleMarriageConfirmed($event)"
+                  (marriageConfirmed)="
+                    handleRelationshipActionCompleted($event)
+                  "
                 ></app-marriage-confirmation-modal>
               </div>
             </td>
@@ -328,6 +323,13 @@
     </div>
   </div>
 </div>
+
+<app-add-member-form
+  [isVisible]="isAddModalOpen"
+  (memberAdded)="addMember($event)"
+  (cancelAdd)="closeAddMemberModal()"
+>
+</app-add-member-form>
 
 <app-family-relationship
   *ngIf="showRelationships"

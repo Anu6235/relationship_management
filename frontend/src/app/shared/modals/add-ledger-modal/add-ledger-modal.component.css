@@ -1,4 +1,4 @@
-/* .modal-wrapper {
+.modal-wrapper {
     position: fixed;
     top: 0;
     left: 0;
@@ -16,7 +16,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.5);
     z-index: 10000;
   }
 
@@ -178,4 +178,12 @@
     font-size: 0.8rem;
     color: #666;
     margin-top: 5px;
-  } */
+  }
+
+  .error {
+    color: red;
+    font-style: italic;
+    margin-top: 2px;
+    font-size: small;
+  }
+  

@@ -1,6 +1,8 @@
 const app = require('./app');
 const db = require('./models');
 const { setupLedgerScheduler } = require('./utils/ledgerScheduler');
+const { scheduleFineCalculation } = require('./tasks/fineCalculation');
+
 
 const PORT = process.env.PORT || 5000;
 
@@ -10,4 +12,5 @@ db.sequelize.sync().then(() => {
     });
     
     setupLedgerScheduler();
+    scheduleFineCalculation();
 });

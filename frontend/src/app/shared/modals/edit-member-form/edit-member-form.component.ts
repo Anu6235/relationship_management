@@ -109,6 +109,10 @@ export class EditMemberFormComponent implements OnInit {
 
   private patchFormValues(): void {
     if (this.member) {
+      const maritalStatusOption = this.maritalStatusOptions.find(
+        option => option.value.toLowerCase() === this.member!.marital_status?.toLowerCase()
+      );
+  
       const formValues = {
         ...this.member,
         dob: this.formatDateForInput(this.member.dob),
@@ -116,9 +120,10 @@ export class EditMemberFormComponent implements OnInit {
         deceased: this.member.deceased ? 'true' : 'false',
         gender: this.member.gender,
         status: this.member.status,
-        marital_status: this.member.marital_status,
+        marital_status: maritalStatusOption ? maritalStatusOption.value : '',
         spouse_id: this.member.spouse_id || null
       };
+      console.log('Patching form values:', formValues);
       this.memberForm.patchValue(formValues);
     }
   }

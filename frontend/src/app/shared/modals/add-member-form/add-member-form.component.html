@@ -187,16 +187,84 @@
                 (change)="onSpouseSelected()"
               >
                 <option value="">Select Spouse</option>
-                <option
-                  *ngFor="let spouse of potentialSpouses"
-                  [value]="spouse.id"
+
+                <!-- For non-widowed statuses -->
+                <ng-container
+                  *ngIf="
+                    memberForm.get('marital_status')?.value?.toLowerCase() !==
+                    'widowed'
+                  "
                 >
-                  {{ spouse.first_name }} {{ spouse.last_name }}
-                </option>
+                  <option
+                    *ngFor="let spouse of potentialSpouses"
+                    [value]="spouse.id"
+                  >
+                    {{ spouse.first_name }} {{ spouse.last_name }} ({{
+                      spouse.mobile_number || ""
+                    }})
+                  </option>
+                </ng-container>
+
+                <!-- For widowed status -->
+                <ng-container
+                  *ngIf="
+                    memberForm.get('marital_status')?.value?.toLowerCase() ===
+                    'widowed'
+                  "
+                >
+                  <option
+                    *ngFor="let spouse of deceasedSpouses"
+                    [value]="spouse.id"
+                  >
+                    {{ spouse.first_name }} {{ spouse.last_name }} ({{
+                      spouse.mobile_number || ""
+                    }}) (deceased)
+                  </option>
+                </ng-container>
               </select>
-              <div *ngIf="potentialSpouses.length === 0" class="text-info">
-                No potential spouses available. Please save this member first to
-                link a spouse.
+
+              <div *ngIf="isFieldInvalid('spouse_id')" class="invalid-feedback">
+                Spouse selection is required
+              </div>
+            </div>
+
+            <div *ngIf="showMarriageDatePicker" class="form-group">
+              <label for="marriage_date">Marriage Date *</label>
+              <input
+                type="date"
+                id="marriage_date"
+                formControlName="marriage_date"
+                class="form-control"
+                [class.is-invalid]="isFieldInvalid('marriage_date')"
+              />
+              <div
+                *ngIf="isFieldInvalid('marriage_date')"
+                class="invalid-feedback"
+              >
+                Marriage date is required
+              </div>
+            </div>
+
+            <div
+              *ngIf="
+                memberForm.get('marital_status')?.value?.toLowerCase() ===
+                'divorced'
+              "
+              class="form-group"
+            >
+              <label for="divorce_date">Divorce Date *</label>
+              <input
+                type="date"
+                id="divorce_date"
+                formControlName="divorce_date"
+                class="form-control"
+                [class.is-invalid]="isFieldInvalid('divorce_date')"
+              />
+              <div
+                *ngIf="isFieldInvalid('divorce_date')"
+                class="invalid-feedback"
+              >
+                Divorce date is required
               </div>
             </div>
 

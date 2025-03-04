@@ -6,16 +6,18 @@ export interface Ledger {
     invoice_created_at: Date;
     due_date: Date;
     amount: number;
-    fee: number;
+    fine: number;
     total_amount: number;
-    invoice_status: number;
-    ledgerType?: LedgerType;
-    member?: any;
+    invoice_status: number; // 1=Pending, 2=Paid, 3=Overdue, 4=Cancelled
+    fine_last_calculated_at?: Date;
+    paid_at?: Date;
     createdAt?: Date;
     updatedAt?: Date;
+    ledgerType?: LedgerType;
+    member?: any;
   }
-
-export interface LedgerType {
+  
+  export interface LedgerType {
     id: number;
     name: string;
     description: string;
@@ -23,39 +25,81 @@ export interface LedgerType {
     is_active: boolean;
     duration_value: number;
     duration_unit: 'minute' | 'hour' | 'day' | 'month';
-    condition_config: any;
+    fine_amount: number;
+    fine_interval_value: number;
+    fine_interval_unit: 'minute' | 'hour' | 'day' | 'month';
+    condition_config: any; // JSON object containing member filter conditions
     createdAt?: Date;
     updatedAt?: Date;
-}
-
-export interface LedgerResponse {
+  }
+  
+  export interface LedgerResponse {
     success: boolean;
     data: Ledger[];
-}
-
-export interface SingleLedgerResponse {
+    count?: number;
+    message?: string;
+  }
+  
+  export interface SingleLedgerResponse {
     success: boolean;
     data: Ledger;
-}
-
-export interface LedgerTypeResponse {
+    message?: string;
+  }
+  
+  export interface LedgerTypeResponse {
     success: boolean;
     data: LedgerType[];
-}
-
-export interface SingleLedgerTypeResponse {
+  }
+  
+  export interface SingleLedgerTypeResponse {
     success: boolean;
     data: LedgerType;
-}
-
-export interface EligibleMembersResponse {
+    message?: string;
+  }
+  
+  export interface EligibleMembersResponse {
     success: boolean;
     count: number;
     data: any[];
-}
-
-export interface MemberField {
+  }
+  
+  export interface MemberField {
     label: string;
     value: string;
     options?: string[];
+  }
+  
+  export interface RecalculateFinesResponse {
+    success: boolean;
+    message: string;
+    updatedCount: number;
+  }
+  
+  export interface GenerateLedgersResponse {
+    success: boolean;
+    message: string;
+    count: number;
+  }
+  
+  export interface SchedulerStatusResponse {
+    success: boolean;
+    status: string;
+    nextRun?: Date;
+    frequency?: string;
+  }
+  
+  // Enum for invoice status
+  export enum InvoiceStatus {
+    Pending = 1,
+    Paid = 2,
+    Overdue = 3,
+    Cancelled = 4
+  }
+  
+  // Enum for duration units
+  export enum DurationUnit {
+    Minute = 'minute',
+    Hour = 'hour',
+    Day = 'day',
+    Month = 'month'
   }

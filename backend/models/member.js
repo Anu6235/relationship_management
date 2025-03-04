@@ -86,16 +86,16 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'member_id',
       as: 'parentId'
     });
-    Member.hasMany(models.Marriage, {
+    Member.hasMany(models.ParentTable, {
       foreignKey: 'husband_id',
       as: 'husbandMarriages'
     });
-    Member.hasMany(models.Marriage, {
+    Member.hasMany(models.ParentTable, {
       foreignKey: 'wife_id',
       as: 'wifeMarriages'
     });
     Member.belongsToMany(Member, {
-      through: models.Marriage,
+      through: models.ParentTable,
       as: 'spouse',
       foreignKey: 'husband_id',
       otherKey: 'wife_id'

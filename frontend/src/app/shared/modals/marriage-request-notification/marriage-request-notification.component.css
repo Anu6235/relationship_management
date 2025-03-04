@@ -1,19 +1,27 @@
 .notification-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 2;
-  }
-  
-  .notification-dot {
-    width: 8px;
-    height: 8px;
-    background-color: #22c55e;
-    border: 1.5px solid white;
-    border-radius: 50%;
-    position: absolute;
-    top: 2px;
-    left: 2px;
-  }
-  
-  
+  position: relative;
+  cursor: pointer;
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 2;
+}
+
+.green-dot {
+  background-color: #22c55e;
+}
+
+.red-dot {
+  background-color: #ef4444;
+}
+
+.yellow-dot {
+  background-color: #eab308;
+}

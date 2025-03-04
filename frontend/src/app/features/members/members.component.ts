@@ -474,20 +474,31 @@ getMaritalStatus(status: string): string {
     this.selectedMemberForMarriageConfirmation = null;
   }
   
-  handleMarriageConfirmed(event: any): void {
-    // Refresh member list to show updated marital status
+  handleRelationshipActionCompleted(event: any): void {
+    // Refresh member list to show updated relationship statuses
     this.loadMembers();
-
-      // Clear any pending notifications for this marriage
-      this.clearMarriageNotification(event.marriage.id);
     
-    // Show success notification
-    this.showSuccessToast(`Marriage confirmed successfully with ${event.requester.first_name} ${event.requester.last_name}`);
+    // Show appropriate success notification based on the action
+    switch(event.action) {
+      case 'marriage_confirmed':
+        this.showSuccessToast(`Marriage confirmed successfully with ${event.partner.first_name} ${event.partner.last_name}`);
+        break;
+      case 'marriage_rejected':
+        this.showSuccessToast(`Marriage request from ${event.partner.first_name} ${event.partner.last_name} has been rejected`);
+        break;
+      case 'divorce_confirmed':
+        this.showSuccessToast(`Divorce confirmed with ${event.partner.first_name} ${event.partner.last_name}`);
+        break;
+      case 'divorce_rejected':
+        this.showSuccessToast(`Divorce request from ${event.partner.first_name} ${event.partner.last_name} has been rejected`);
+        break;
+    }
   }
-
+  
   showSuccessToast(message: string): void {
     // Implement your toast notification here
     console.log(message);
+    // You can implement a more visual toast notification if needed
   }
 
   clearMarriageNotification(marriageId: number): void {

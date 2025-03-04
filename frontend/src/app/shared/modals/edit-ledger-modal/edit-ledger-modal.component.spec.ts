@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { StatusUpdateComponent } from './status-update.component';
+import { EditLedgerModalComponent } from './edit-ledger-modal.component';
 
-describe('StatusUpdateComponent', () => {
-  let component: StatusUpdateComponent;
-  let fixture: ComponentFixture<StatusUpdateComponent>;
+describe('EditLedgerModalComponent', () => {
+  let component: EditLedgerModalComponent;
+  let fixture: ComponentFixture<EditLedgerModalComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [StatusUpdateComponent]
+      imports: [EditLedgerModalComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(StatusUpdateComponent);
+    fixture = TestBed.createComponent(EditLedgerModalComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

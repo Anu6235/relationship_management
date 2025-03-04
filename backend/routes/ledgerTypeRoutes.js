@@ -57,6 +57,9 @@ router.post('/', protect, adminOnly, async (req, res) => {
         is_active, 
         duration_value, 
         duration_unit, 
+        fine_amount,
+        fine_interval_value,
+        fine_interval_unit,
         condition_config 
       } = req.body;
       
@@ -67,6 +70,9 @@ router.post('/', protect, adminOnly, async (req, res) => {
         is_active,
         duration_value,
         duration_unit,
+        fine_amount,
+        fine_interval_value,
+        fine_interval_unit,
         condition_config
       });
       
@@ -94,6 +100,9 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
         is_active, 
         duration_value, 
         duration_unit, 
+        fine_amount,
+        fine_interval_value,
+        fine_interval_unit,
         condition_config 
       } = req.body;
       
@@ -113,6 +122,9 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
         is_active,
         duration_value,
         duration_unit,
+        fine_amount,
+        fine_interval_value,
+        fine_interval_unit,
         condition_config
       });
       

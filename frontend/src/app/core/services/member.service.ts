@@ -127,6 +127,12 @@ export class MemberService {
 
   getUnmarriedMembersByGender(gender: string): Observable<MemberResponse> {
     return this.http.get<MemberResponse>(`${this.API_URL}/unmarried/${gender}`).pipe(
+      map(response => {
+        if (response.data && Array.isArray(response.data)) {
+          response.data = response.data.map(member => this.processImageUrls(member));
+        }
+        return response;
+      }),
       catchError(this.handleError)
     );
   }
@@ -135,20 +141,87 @@ export class MemberService {
     return this.getUnmarriedMembersByGender(gender === 'male' ? 'female' : 'male');
   }
   
-confirmMarriage(marriageId: number): Observable<SingleMemberResponse> {
-  return this.http.put<SingleMemberResponse>(`${this.API_URL}/marriage/${marriageId}/confirm`, {}).pipe(
-    map(response => {
-      // Make sure to process any member data in the response
-      if (response.data) {
-        response.data = this.processImageUrls(response.data);
-      }
-      return response;
+  getDeceasedMembersByGender(gender: string): Observable<MemberResponse> {
+    return this.http.get<MemberResponse>(`${this.API_URL}/deceased/${gender}`).pipe(
+      map(response => {
+        if (response.data && Array.isArray(response.data)) {
+          response.data = response.data.map(member => this.processImageUrls(member));
+        }
+        return response;
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  // Updated marriage confirmation method
+  confirmMarriage(marriageId: number): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/marriages/${marriageId}/confirm`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+// Update method to reject marriage requests
+rejectMarriage(marriageId: number): Observable<any> {
+  return this.authService.getCurrentUser().pipe(
+    switchMap(currentUser => {
+      const memberId = currentUser?.id || null;
+      
+      return this.http.delete<any>(`${this.API_URL}/marriages/${marriageId}/reject`, {
+        body: { memberId }
+      });
     }),
     catchError(this.handleError)
   );
 }
 
-    // Get pending marriage requests for a member
+  // Updated method for divorce confirmation
+  confirmDivorce(divorceId: number): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/divorces/${divorceId}/confirm`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // New method to reject divorce requests
+  rejectDivorce(requestId: number): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/divorces/${requestId}/reject`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Get pending divorce requests for a member
+  getPendingDivorceRequestsForMember(memberId: number): Observable<any> {
+    return this.http.get<any>(`${this.API_URL}/${memberId}/divorce-requests`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  confirmMarriageAndDivorce(relationshipId: number): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/relationships/${relationshipId}/confirm-both`, {});
+  }
+
+  getDivorceRequests(memberId: number): Observable<any> {
+    return this.http.get<any>(`${this.API_URL}/divorce-requests/${memberId}`);
+  }
+
+  createDivorceRequest(husbandId: number, wifeId: number, marriageDate: string, divorceDate: string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/divorce`, {
+      husband_id: husbandId,
+      wife_id: wifeId,
+      marriage_date: marriageDate,
+      divorce_date: divorceDate
+    });
+  }
+
+  recordWidowedStatus(livingMemberId: number, deceasedSpouseId: number, marriageDate: string, deathDate: string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/widowed`, {
+      living_member_id: livingMemberId,
+      deceased_spouse_id: deceasedSpouseId,
+      marriage_date: marriageDate,
+      death_date: deathDate
+    });
+  }
+
+  // Get pending marriage requests for a member
   getPendingMarriageRequestsForMember(memberId: number): Observable<any> {
     return this.http.get<any>(`${this.API_URL}/marriage-requests/${memberId}`).pipe(
       catchError(this.handleError)
@@ -178,93 +251,20 @@ confirmMarriage(marriageId: number): Observable<SingleMemberResponse> {
     return throwError(() => new Error(errorMessage));
   }
 
-  // getRelationships(memberId: number): Observable<{
-  //   member: Member;
-  //   spouse: Member | null;
-  //   children: Member[];
-  //   parents: Member[];
-  // }> {
-  //   return this.http.get<{
-  //     member: Member;
-  //     spouse: Member | null;
-  //     children: Member[];
-  //     parents: Member[];
-  //   }>(`${this.API_URL}/${memberId}/relationships`);
-  // }
-
-getRelationships(memberId: number): Observable<any> {
-  return this.http.get<any>(`${this.API_URL}/${memberId}/relationships`)
-    .pipe(
-      map(response => {
-        if (response.success) {
-          return response.data;
-        } else {
-          throw new Error(response.message);
-        }
-      }),
-      catchError(error => {
-        console.error('Error fetching relationships', error);
-        return throwError(() => new Error(error.message));
-      })
-    );
-}
-
-  // recordDivorce(marriageId: number, divorceDate: Date): Observable<SingleMemberResponse> {
-  //   return this.http.put<SingleMemberResponse>(`${this.API_URL}/marriage/${marriageId}/divorce`, {
-  //     divorce_date: divorceDate
-  //   });
-  // }
-
-  // recordDeath(memberId: number, data: DeathData): Observable<SingleMemberResponse> {
-  //   return this.http.put<SingleMemberResponse>(`${this.API_URL}/${memberId}/death`, data);
-  // }
-
-  // getRelationships(memberId: number): Observable<{
-  //   member: Member;
-  //   spouse: Member | null;
-  //   children: Member[];
-  //   parents: Member[];
-  // }> {
-  //   return this.http.get<RelationshipResponse>(`${this.API_URL}/${memberId}/relationships`)
-  //     .pipe(map(response => response.data));
-  // }
-
-  // //Get pending marriage requests for a member
-  // getPendingMarriageRequests(memberId: number): Observable<any> {
-  //   return this.http.get<any>(`${this.API_URL}/${memberId}/marriage-requests`);
-  // }
-
-  // //Send a marriage request
-  // sendMarriageRequest(requesterId: number, requesteeId: number): Observable<any> {
-  //   return this.http.post<any>(`${this.API_URL}/marriage-request`, {
-  //     requester_id: requesterId,
-  //     requestee_id: requesteeId
-  //   });
-  // }
-
-  // //Respond to a marriage request
-  // respondToMarriageRequest(requestId: number, accept: boolean): Observable<any> {
-  //   return this.http.put<any>(`${this.API_URL}/marriage-request/${requestId}`, {
-  //     status: accept ? 'approved' : 'rejected'
-  //   }).pipe(
-  //     switchMap(response => {
-  //       if (accept && response.marriage_id) {
-  //         // If accepted, automatically confirm the marriage
-  //         return this.confirmMarriage(response.marriage_id).pipe(
-  //           map(() => response)
-  //         );
-  //       }
-  //       return of(response);
-  //     })
-  //   );
-  // }
-
-  // //Modify the createMarriage method to support pending status
-  // createMarriage(marriageData: MarriageData): Observable<SingleMemberResponse> {
-  //   if (!marriageData.status) {
-  //     marriageData.status = 'pending';
-  //   }
-
-  //   return this.http.post<SingleMemberResponse>(`${this.API_URL}/marriage`, marriageData)
-  // }
+  getRelationships(memberId: number): Observable<any> {
+    return this.http.get<any>(`${this.API_URL}/${memberId}/relationships`)
+      .pipe(
+        map(response => {
+          if (response.success) {
+            return response.data;
+          } else {
+            throw new Error(response.message);
+          }
+        }),
+        catchError(error => {
+          console.error('Error fetching relationships', error);
+          return throwError(() => new Error(error.message));
+        })
+      );
+  }
 }

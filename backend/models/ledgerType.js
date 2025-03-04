@@ -30,6 +30,21 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'day'
     },
+    fine_amount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0.00
+    },
+    fine_interval_value: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 10
+    },
+    fine_interval_unit: {
+      type: DataTypes.ENUM('minute', 'hour', 'day', 'month'),
+      allowNull: false,
+      defaultValue: 'day'
+    },
     condition_config: {
       type: DataTypes.JSON,
       allowNull: true,
@@ -74,6 +89,39 @@ module.exports = (sequelize, DataTypes) => {
         date.setDate(date.getDate() + this.duration_value);
     }
     return date;
+  };
+  
+  // Calculate fine based on days since due date
+  LedgerType.prototype.calculateFine = function(dueDate, currentDate = new Date()) {
+    if (!dueDate || currentDate <= dueDate || this.fine_amount <= 0 || this.fine_interval_value <= 0) {
+      return 0;
+    }
+    
+    const dueDateTime = new Date(dueDate).getTime();
+    const currentDateTime = new Date(currentDate).getTime();
+    
+    let intervalMilliseconds;
+    switch(this.fine_interval_unit) {
+      case 'minute':
+        intervalMilliseconds = this.fine_interval_value * 60 * 1000;
+        break;
+      case 'hour':
+        intervalMilliseconds = this.fine_interval_value * 60 * 60 * 1000;
+        break;
+      case 'day':
+        intervalMilliseconds = this.fine_interval_value * 24 * 60 * 60 * 1000;
+        break;
+      case 'month':
+        intervalMilliseconds = this.fine_interval_value * 30 * 24 * 60 * 60 * 1000;
+        break;
+      default:
+        intervalMilliseconds = this.fine_interval_value * 24 * 60 * 60 * 1000;
+    }
+    
+    const timeDifference = currentDateTime - dueDateTime;
+    const intervals = Math.floor(timeDifference / intervalMilliseconds);
+    
+    return intervals * parseFloat(this.fine_amount);
   };
   
   // Method to check if a member satisfies the conditions

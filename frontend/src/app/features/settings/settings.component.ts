@@ -6,10 +6,16 @@ import { ToastrService } from 'ngx-toastr';
 import { LedgerType, MemberField } from '../../core/models/ledger';
 import { LedgerService } from '../../core/services/ledger.service';
 import { Subscription, interval } from 'rxjs';
+import { AddLedgerModalComponent } from '../../shared/modals/add-ledger-modal/add-ledger-modal.component';
 
 @Component({
   selector: 'app-settings',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    ReactiveFormsModule,
+    AddLedgerModalComponent,
+  ],
   standalone: true,
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css']
@@ -21,10 +27,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
   selectedFile: File | null = null;
   previewUrl: string | null = null;
   isSubmitting = false;
+  isAddLedgerModalOpen = false;
+  ledgerToEdit = false;
   successMessage: string | null = null;
   errorMessage: string | null = null;
 
   ledgerTypes: LedgerType[] = [];
+  ledgerTypeToEdit: LedgerType | null = null;
+
   memberFields: MemberField[] = [
     { label: 'Marital Status', value: 'marital_status', options: ['single', 'married', 'divorced', 'widowed'] },
     { label: 'Gender', value: 'gender', options: ['male', 'female', 'other'] },
@@ -40,7 +50,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private appConfigService: AppConfigService,
     private ledgerService: LedgerService,
-    private toastr: ToastrService
+    // private toastr: ToastrService
   ) {
     this.configForm = this.fb.group({
       appName: ['', Validators.required],
@@ -127,14 +137,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.appConfigService.saveAppConfig(formData).subscribe({
         next: (response) => {
           if (response.success) {
-            this.toastr.success('Configuration saved successfully!', 'Success');
+            // this.toastr.success('Configuration saved successfully!', 'Success');
           } else {
-            this.toastr.error('Failed to save configuration', 'Error');
+            // this.toastr.error('Failed to save configuration', 'Error');
           }
         },
         error: (error) => {
           console.error('Error saving configuration:', error);
-          this.toastr.error('Error saving configuration', 'Error');
+          // this.toastr.error('Error saving configuration', 'Error');
         },
         complete: () => {
           this.isSubmitting = false;
@@ -199,7 +209,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading ledger types:', error);
-        this.toastr.error('Failed to load ledger types', 'Error');
+        // this.toastr.error('Failed to load ledger types', 'Error');
       }
     });
   }
@@ -298,19 +308,19 @@ export class SettingsComponent implements OnInit, OnDestroy {
               'Ledger creation enabled. Ledgers will be generated according to the schedule.' : 
               'Ledger creation disabled.';
             
-            this.toastr.success(statusMessage, 'Status Updated');
+            // this.toastr.success(statusMessage, 'Status Updated');
             
             // If we're turning it on, create a ledger immediately
             if (isActive) {
               this.generateLedgers(typeId);
             }
           } else {
-            this.toastr.error('Failed to update ledger status', 'Error');
+            // this.toastr.error('Failed to update ledger status', 'Error');
           }
         },
         error: (error) => {
           console.error('Error updating ledger status:', error);
-          this.toastr.error('Error updating ledger status', 'Error');
+          // this.toastr.error('Error updating ledger status', 'Error');
         },
         complete: () => {
           this.isSubmitting = false;
@@ -349,7 +359,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       const elapsed = now.getTime() - lastCreated.getTime();
       
       if (elapsed < minimumInterval) {
-        this.toastr.info(`Ledger creation skipped - next creation in ${Math.ceil((minimumInterval - elapsed) / (60 * 1000))} minutes`, 'Information');
+        // this.toastr.info(`Ledger creation skipped - next creation in ${Math.ceil((minimumInterval - elapsed) / (60 * 1000))} minutes`, 'Information');
         return;
       }
     }
@@ -359,14 +369,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
         if (response.success) {
           // Update the last creation time for this ledger type
           this.lastLedgerCreationTime[ledgerTypeId] = new Date();
-          this.toastr.success('Ledgers generated successfully!', 'Success');
+          // this.toastr.success('Ledgers generated successfully!', 'Success');
         } else {
-          this.toastr.warning('Failed to generate ledgers', 'Warning');
+          // this.toastr.warning('Failed to generate ledgers', 'Warning');
         }
       },
       error: (error) => {
         console.error('Error generating ledgers:', error);
-        this.toastr.error('Error generating ledgers', 'Error');
+        // this.toastr.error('Error generating ledgers', 'Error');
       }
     });
   }
@@ -442,6 +452,183 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.addCondition();
 
     // Implementation for adding a new ledger type would go here
-    this.toastr.info('New ledger type form prepared. Fill in details and save.', 'Info');
+    // this.toastr.info('New ledger type form prepared. Fill in details and save.', 'Info');
   }
+
+  openNewLedgerModal(): void {
+    this.isAddLedgerModalOpen = true;
+  }
+
+  closeAddLedgerModal(): void {
+    this.isAddLedgerModalOpen = false;
+    this.ledgerTypeToEdit = null;
+  }
+
+  saveLedgerConfig(ledgerConfig: any): void {
+    this.isSubmitting = true;
+    
+    if (this.ledgerTypeToEdit) {
+      // Update existing ledger type
+      this.ledgerService.updateLedgerType(this.ledgerTypeToEdit.id, ledgerConfig).subscribe({
+        next: (response) => {
+          if (response.success) {
+            // this.toastr.success('Ledger configuration updated successfully!', 'Success');
+            this.closeAddLedgerModal();
+            this.loadLedgerTypes();
+            
+            // If the updated ledger type is active, restart the ledger creation process
+            if (ledgerConfig.is_active) {
+              this.startLedgerCreation(this.ledgerTypeToEdit!.id);
+            }
+          } else {
+            // this.toastr.error('Failed to update ledger configuration', 'Error');
+          }
+        },
+        error: (error) => {
+          console.error('Error updating ledger configuration:', error);
+          // this.toastr.error('Error updating ledger configuration', 'Error');
+        },
+        complete: () => {
+          this.isSubmitting = false;
+        }
+      });
+    } else {
+      // Create new ledger type
+      this.ledgerService.createLedgerType(ledgerConfig).subscribe({
+        next: (response) => {
+          if (response.success) {
+            // this.toastr.success('Ledger configuration added successfully!', 'Success');
+            this.closeAddLedgerModal();
+            this.loadLedgerTypes();
+            
+            // If the new ledger type is active, start the ledger creation process
+            if (ledgerConfig.is_active) {
+              this.startLedgerCreation(response.data.id);
+            }
+          } else {
+            // this.toastr.error('Failed to add ledger configuration', 'Error');
+          }
+        },
+        error: (error) => {
+          console.error('Error adding ledger configuration:', error);
+          // this.toastr.error('Error adding ledger configuration', 'Error');
+        },
+        complete: () => {
+          this.isSubmitting = false;
+        }
+      });
+    }
+  }
+
+getConditionArray(conditionConfig: any): Array<{field: string, value: string}> {
+  if (!conditionConfig) return [];
+  
+  return Object.entries(conditionConfig).map(([field, value]) => ({
+    field,
+    value: value as string
+  }));
+}
+
+getConditionClass(condition: string): string {
+  switch (condition) {
+    case 'married':
+      return 'condition-married';
+    case 'single':
+      return 'condition-single';
+    case 'divorced':
+      return 'condition-divorced';
+    case 'widowed':
+      return 'condition-widowed';
+    case 'male':
+      return 'condition-male';
+    case 'female':
+      return 'condition-female';
+    case 'other':
+      return 'condition-other';
+    case 'active':
+      return 'condition-active';
+    case 'inactive':
+      return 'condition-inactive';
+    case 'suspended':
+      return 'condition-suspended';
+    case 'yes': 
+      return 'condition-deceased';
+    case 'no': 
+      return 'condition-alive';
+    default:
+      return 'condition-default';
+  }
+}
+
+formatConditionValue(value: string): string {
+  if (value === 'yes') return 'Deceased';
+  if (value === 'no') return 'Alive';
+
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+}
+
+editLedgerType(ledgerType: LedgerType): void {
+  this.ledgerTypeToEdit = ledgerType;
+  this.isAddLedgerModalOpen = true;
+}
+
+updateLedgerConfig(updateData: {id: number, data: any}): void {
+  this.isSubmitting = true;
+  
+  // Update existing ledger type
+  this.ledgerService.updateLedgerType(updateData.id, updateData.data).subscribe({
+    next: (response) => {
+      if (response.success) {
+        // this.toastr.success('Ledger configuration updated successfully!', 'Success');
+        this.closeAddLedgerModal();
+        
+        // Refresh the ledger types list
+        this.loadLedgerTypes();
+        
+        // If the updated ledger type is active, restart the ledger creation process
+        if (updateData.data.is_active) {
+          this.startLedgerCreation(updateData.id);
+        }
+      } else {
+        // this.toastr.error('Failed to update ledger configuration', 'Error');
+      }
+    },
+    error: (error) => {
+      console.error('Error updating ledger configuration:', error);
+      // this.toastr.error('Error updating ledger configuration', 'Error');
+    },
+    complete: () => {
+      this.isSubmitting = false;
+      this.ledgerToEdit = false; // Reset
+    }
+  });
+}
+
+closeEditLedgerModal(): void {
+  this.ledgerToEdit = false; 
+}
+
+deleteLedgerType(id: number): void {
+  if (confirm('Are you sure you want to delete this ledger configuration?')) {
+    this.ledgerService.deleteLedgerType(id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          // this.toastr.success('Ledger configuration deleted successfully', 'Success');
+          this.loadLedgerTypes();
+        } else {
+          // this.toastr.error('Failed to delete ledger configuration', 'Error');
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting ledger configuration:', error);
+        // this.toastr.error('Error deleting ledger configuration', 'Error');
+      }
+    });
+  }
+}
+
+formatCurrency(value: number): string {
+  if (value == null) return '₹0.00'; 
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
+}
 }

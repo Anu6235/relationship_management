@@ -74,209 +74,151 @@
     <div class="card">
       <div class="card-body">
         <div class="container mx-auto p-4">
-          <h2 class="text-2xl font-bold">Ledger Configuration</h2>
+          <h2 class="text-2xl font-bold">Auto Payment Configuration</h2>
 
-          <form [formGroup]="ledgerForm" class="max-w-lg">
-            <div class="mb-4">
-              <label class="block mb-2">Ledger Type</label>
-              <select
-                formControlName="ledgerTypeId"
-                class="w-full p-2 border rounded"
-                (change)="onLedgerTypeChange($event)"
-              >
-                <option *ngFor="let type of ledgerTypes" [value]="type.id">
-                  {{ type.name }}
-                </option>
-              </select>
-            </div>
-
-            <div class="mb-4">
-              <label class="block mb-2">Description</label>
-              <textarea
-                formControlName="description"
-                class="w-full p-2 border rounded"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <!-- Amount and Fee  -->
-            <div class="mb-4">
-              <div class="flex items-center gap-2">
-                <div class="flex-1">
-                  <label class="block mb-2">Amount</label>
-                  <div class="border rounded overflow-hidden">
-                    <input
-                      type="number"
-                      formControlName="amount"
-                      class="w-full p-2 border-0"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-                <div class="flex-1">
-                  <label class="block mb-2">Fee (After due date)</label>
-                  <div class="border rounded overflow-hidden">
-                    <input
-                      type="number"
-                      formControlName="fee"
-                      class="w-full p-2 border-0"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="mb-4">
-              <label class="block mb-2">Due Date</label>
-              <input
-                type="date"
-                formControlName="dueDate"
-                class="w-full p-2 border rounded"
-              />
-            </div>
-
-            <!-- Interval -->
-            <div class="mb-4">
-              <label class="block mb-2">Interval</label>
-              <div class="flex items-center gap-2">
-                <div class="flex-1">
-                  <div class="border rounded overflow-hidden">
-                    <input
-                      type="number"
-                      formControlName="durationValue"
-                      class="w-full p-2 border-0"
-                      min="1"
-                    />
-                  </div>
-                </div>
-                <div class="flex-1">
-                  <div class="border rounded overflow-hidden">
-                    <select
-                      formControlName="durationUnit"
-                      class="w-full p-2 border-0"
-                    >
-                      <option value="minute">Minute(s)</option>
-                      <option value="hour">Hour(s)</option>
-                      <option value="day">Day(s)</option>
-                      <option value="month">Month(s)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <p class="text-sm text-gray-500 mt-1">
-                When enabled, ledgers will be created at this interval
-              </p>
-            </div>
-            <!-- Filter Conditions -->
-            <div class="mb-4">
-              <div class="flex items-center justify-between mb-2">
-                <label class="block">Filter Conditions</label>
-                <button
-                  type="button"
-                  class="w-5 h-5 rounded-md bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors"
-                  (click)="addCondition()"
-                >
-                  <span class="text font-medium">+</span>
-                </button>
-              </div>
-              <div formArrayName="conditions">
-                <div
-                  *ngFor="let condition of conditions.controls; let i = index"
-                  [formGroupName]="i"
-                  class="mb-2"
-                >
-                  <div class="flex items-center gap-2">
-                    <div class="flex-1">
-                      <div class="border rounded overflow-hidden">
-                        <select
-                          formControlName="field"
-                          class="w-full p-2 border-0"
-                        >
-                          <option
-                            *ngFor="let field of memberFields"
-                            [value]="field.value"
-                          >
-                            {{ field.label }}
-                          </option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="flex-1">
-                      <div class="border rounded overflow-hidden">
-                        <select
-                          formControlName="value"
-                          class="w-full p-2 border-0"
-                        >
-                          <option
-                            *ngFor="
-                              let option of getFieldOptions(
-                                condition.get('field')?.value
-                              )
-                            "
-                            [value]="option"
-                          >
-                            {{ option }}
-                          </option>
-                        </select>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      class="flex-shrink-0 w-8 h-8 rounded-md bg-gray-300 text-gray-700 flex items-center justify-center hover:bg-gray-400"
-                      (click)="removeCondition(i)"
-                    >
-                      <span class="text-xl">−</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Toggle switch -->
-            <div class="flex items-center justify-between mb-6">
-              <div>
-                <label class="block font-medium text-lg"
-                  >Automatic Ledger Creation</label
-                >
-                <p class="text-sm text-gray-500">
-                  {{
-                    ledgerForm.get("isActive")?.value
-                      ? "ON - Ledgers will be created automatically"
-                      : "OFF - No automatic ledger creation"
-                  }}
-                </p>
-              </div>
-              <div class="relative inline-block w-16 align-middle">
-                <input
-                  type="checkbox"
-                  formControlName="isActive"
-                  id="toggle"
-                  class="sr-only"
-                  (change)="updateLedgerStatus()"
-                />
-                <label
-                  for="toggle"
-                  class="toggle-label block h-8 rounded-full bg-gray-300 cursor-pointer transition-colors duration-200 ease-in-out"
-                  [ngClass]="{
-                    'bg-green-500': ledgerForm.get('isActive')?.value
-                  }"
-                ></label>
-              </div>
-            </div>
-
-            <!-- Save button for other settings -->
+          <div class="flex justify-end">
             <button
-              type="button"
-              [disabled]="ledgerForm.invalid || isSubmitting"
-              class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-              (click)="updateLedgerStatus()"
+              class="flex items-center justify-start px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-blue-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-blue-700 focus:outline-none focus:shadow-outline-blue"
+              (click)="openNewLedgerModal()"
             >
-              {{ isSubmitting ? "Saving..." : "Save Settings" }}
+              <svg
+                class="w-4 h-4 mr-2 -ml-1"
+                fill="currentColor"
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V5a1 1 0 011-1z"
+                  clip-rule="evenodd"
+                  fill-rule="evenodd"
+                ></path>
+              </svg>
+              <span>Add Config</span>
             </button>
-          </form>
+          </div>
+          <br />
+
+          <div class="w-full overflow-hidden rounded-lg shadow-xs">
+            <div class="w-full overflow-x-auto">
+              <table class="w-full whitespace-no-wrap">
+                <thead>
+                  <tr
+                    class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800"
+                  >
+                    <th class="px-4 py-3">Ledger Type</th>
+                    <th class="px-4 py-3">Description</th>
+                    <th class="px-4 py-3">Amount</th>
+                    <th class="px-4 py-3">Fine</th>
+                    <th class="px-4 py-3">Interval</th>
+                    <th class="px-4 py-3">Due Duration</th>
+                    <th class="px-4 py-3">Filter Conditions</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody
+                  class="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800"
+                >
+                  <tr
+                    *ngFor="let ledger of ledgerTypes"
+                    class="text-gray-700 dark:text-gray-400"
+                  >
+                    <td class="px-4 py-3 text-sm font-semibold">
+                      {{ ledger.name }}
+                    </td>
+                    <td class="px-4 py-3 text-sm">{{ ledger.description }}</td>
+                    <td class="px-4 py-3 text-sm">
+                      {{ formatCurrency(ledger.amount) }}
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                      {{ formatCurrency(ledger.fine_amount) }}
+                    </td>
+
+                    <td class="px-4 py-3 text-sm">
+                      {{ ledger.duration_value }} {{ ledger.duration_unit }}(s)
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                      {{ ledger.fine_interval_value }}
+                      {{ ledger.fine_interval_unit }}(s)
+                    </td>
+                    <td class="px-4 py-3 text-xs">
+                      <span
+                        *ngFor="
+                          let condition of getConditionArray(
+                            ledger.condition_config
+                          )
+                        "
+                        [ngClass]="getConditionClass(condition.value)"
+                        class="px-2 py-1 font-semibold leading-tight rounded-full mr-1"
+                      >
+                        {{ formatConditionValue(condition.value) }}
+                      </span>
+                    </td>
+
+                    <td class="px-4 py-3 text-xs">
+                      <span
+                        [ngClass]="
+                          ledger.is_active
+                            ? 'px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full'
+                            : 'px-2 py-1 font-semibold leading-tight text-gray-700 bg-gray-100 rounded-full'
+                        "
+                      >
+                        {{ ledger.is_active ? "Active" : "Inactive" }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center space-x-4 text-sm">
+                        <button
+                          class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-blue-600 rounded-lg focus:outline-none focus:shadow-outline-gray"
+                          aria-label="Edit"
+                          (click)="editLedgerType(ledger)"
+                        >
+                          <svg
+                            class="w-5 h-5"
+                            aria-hidden="true"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+                            ></path>
+                          </svg>
+                        </button>
+                        <button
+                          class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-red-600 rounded-lg focus:outline-none focus:shadow-outline-gray"
+                          aria-label="Delete"
+                          (click)="deleteLedgerType(ledger.id)"
+                        >
+                          <svg
+                            class="w-5 h-5"
+                            aria-hidden="true"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fill-rule="evenodd"
+                              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                              clip-rule="evenodd"
+                            ></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<app-add-ledger-modal
+  [isOpen]="isAddLedgerModalOpen"
+  [editMode]="!!ledgerTypeToEdit"
+  [ledgerTypeToEdit]="ledgerTypeToEdit"
+  (close)="closeAddLedgerModal()"
+  (save)="saveLedgerConfig($event)"
+></app-add-ledger-modal>

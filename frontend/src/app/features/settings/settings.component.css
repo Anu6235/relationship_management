@@ -20,3 +20,73 @@
   input:checked + .toggle-label:after {
     transform: translateX(2rem);
   }
+
+ /* Marital Status */
+.condition-married {
+  color: #b71c1c; /* Deep Red */
+  background-color: #ffebee; /* Light Red */
+}
+
+.condition-single {
+  color: #1976d2; /* Vibrant Blue */
+  background-color: #e3f2fd; /* Light Blue */
+}
+
+.condition-divorced {
+  color: #880e4f; /* Deep Pink */
+  background-color: #fce4ec; /* Light Pink */
+}
+
+.condition-widowed {
+  color: #5d4037; /* Dark Brown */
+  background-color: #efebe9; /* Light Brown */
+}
+
+/* Gender */
+.condition-male {
+  color: #0d47a1; /* Royal Blue */
+  background-color: #bbdefb; /* Soft Blue */
+}
+
+.condition-female {
+  color: #d81b60; /* Bold Pink */
+  background-color: #f8bbd0; /* Soft Pink */
+}
+
+.condition-other {
+  color: #4a148c; /* Dark Purple */
+  background-color: #e1bee7; /* Soft Purple */
+}
+
+/* Status */
+.condition-active {
+  color: #1b5e20; /* Rich Green */
+  background-color: #c8e6c9; /* Soft Green */
+}
+
+.condition-inactive {
+  color: #455a64; /* Dark Grayish Blue */
+  background-color: #cfd8dc; /* Soft Gray */
+}
+
+.condition-suspended {
+  color: #ff6f00; /* Bold Orange */
+  background-color: #ffecb3; /* Soft Yellow */
+}
+
+/* Deceased */
+.condition-deceased {
+  color: #212121; /* Almost Black */
+  background-color: #bdbdbd; /* Soft Gray */
+}
+
+.condition-alive {
+  color: #00796b; /* Deep Teal */
+  background-color: #b2dfdb; /* Soft Teal */
+}
+
+/* Default */
+.condition-default {
+  color: #424242; /* Charcoal */
+  background-color: #f5f5f5; /* Soft Gray */
+}

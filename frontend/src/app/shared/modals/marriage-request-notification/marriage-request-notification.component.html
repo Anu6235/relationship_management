@@ -1,8 +1,26 @@
-<div class="image-container">
+<div class="notification-container" (click)="handleRequest()">
+  <!-- Display the member image (assuming it's handled by parent component) -->
+  <ng-content></ng-content>
+
+  <!-- Notification dots with different colors based on request type -->
   <div
-    *ngIf="hasPendingMarriageRequest"
+    *ngIf="
+      hasPendingMarriageRequest ||
+      hasPendingDivorceRequest ||
+      hasPendingBothRequests
+    "
     class="notification-dot"
-    title="Pending marriage request"
+    [ngClass]="{
+      'green-dot': hasPendingMarriageRequest,
+      'red-dot': hasPendingDivorceRequest,
+      'yellow-dot': hasPendingBothRequests
+    }"
+    [title]="
+      hasPendingBothRequests
+        ? 'Pending marriage and divorce confirmation'
+        : hasPendingDivorceRequest
+        ? 'Pending divorce confirmation'
+        : 'Pending marriage confirmation'
+    "
   ></div>
-  <!-- Your image element would go here -->
 </div>
