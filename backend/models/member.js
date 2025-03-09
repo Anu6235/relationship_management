@@ -53,12 +53,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users', 
+        model: 'users',
         key: 'id',
       },
       onUpdate: 'CASCADE',
       onDelete: 'SET NULL',
-    },   
+    },
     status: {
       type: DataTypes.ENUM('active', 'inactive'),
       defaultValue: 'active',
@@ -71,58 +71,67 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('single', 'married', 'widowed', 'divorced'),
       defaultValue: 'single',
     },
+    parent_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Comma-separated ParentTable IDs of confirmed marriages'
+    }
   }, {
-    tableName: 'members', 
-    underscored: true, 
+    tableName: 'members',
+    underscored: true,
   });
 
-   Member.associate = (models) => {
+  Member.associate = (models) => {
+    // Verifier association
     Member.belongsTo(models.User, {
       foreignKey: 'verified_by',
       as: 'verifier',
       targetKey: 'id'
     });
-    Member.hasOne(models.ParentId, {
-      foreignKey: 'member_id',
-      as: 'parentId'
-    });
-    Member.hasMany(models.ParentTable, {
-      foreignKey: 'husband_id',
-      as: 'husbandMarriages'
-    });
-    Member.hasMany(models.ParentTable, {
-      foreignKey: 'wife_id',
-      as: 'wifeMarriages'
-    });
+
+    // Marriage relationships
     Member.belongsToMany(Member, {
       through: models.ParentTable,
       as: 'spouse',
       foreignKey: 'husband_id',
       otherKey: 'wife_id'
     });
-    Member.hasMany(Member, {
-      foreignKey: 'father_id',
-      as: 'fatherChildren'
+
+    // Parent-child relationships
+    Member.belongsToMany(Member, {
+      through: 'MemberParentTable',
+      as: 'parents',
+      foreignKey: 'child_id',
+      otherKey: 'parent_id'
     });
-    Member.hasMany(Member, {
-      foreignKey: 'mother_id',
-      as: 'motherChildren'
-    });
-    Member.belongsTo(Member, {
-      foreignKey: 'father_id',
-      as: 'father'
-    });
-    Member.belongsTo(Member, {
-      foreignKey: 'mother_id',
-      as: 'mother'
+
+    Member.belongsToMany(Member, {
+      through: 'MemberParentTable',
+      as: 'children',
+      foreignKey: 'parent_id',
+      otherKey: 'child_id'
     });
   };
 
-  Member.prototype.getProfileImageUrl = function() {
+  Member.prototype.getProfileImageUrl = function () {
     if (this.profile_image) {
       return `/images/member-images/${this.profile_image}`;
     }
     return `/images/member-avatars/${this.gender.toLowerCase()}-avatar.png`;
+  };
+
+  // Helper methods for parent_id management
+  Member.prototype.getParentIds = function() {
+    return this.parent_id ? this.parent_id.split(',').map(id => Number(id)) : [];
+  };
+
+  Member.prototype.addParentId = function(newParentId) {
+    const currentIds = this.getParentIds();
+    if (!currentIds.includes(Number(newParentId))) {
+      currentIds.push(Number(newParentId));
+      this.parent_id = currentIds.join(',');
+    }
+    return this.parent_id;
   };
 
   return Member;

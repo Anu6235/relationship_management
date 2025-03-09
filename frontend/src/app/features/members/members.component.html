@@ -69,10 +69,6 @@
                     class="profile-image w-full h-full object-cover rounded-full"
                     (error)="handleImageError($event, member)"
                   />
-                  <!-- Marriage request notification indicator -->
-                  <app-marriage-request-notification
-                    [member]="member"
-                  ></app-marriage-request-notification>
                 </div>
               </div>
             </td>
@@ -170,12 +166,6 @@
                   alt="Verification icon"
                 />
 
-                <app-verification-modal
-                  [isVisible]="isVerificationModalOpen"
-                  (confirmed)="verifyMember()"
-                  (cancelled)="closeVerificationModal()"
-                ></app-verification-modal>
-
                 <button
                   class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray"
                   style="color: #2563eb"
@@ -193,14 +183,6 @@
                     ></path>
                   </svg>
                 </button>
-
-                <app-edit-member-form
-                  [isVisible]="isEditModalOpen"
-                  [member]="selectedMember"
-                  (memberEdited)="updateMember($event)"
-                  (cancelEdit)="closeEditMemberModal()"
-                >
-                </app-edit-member-form>
 
                 <button
                   class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray"
@@ -221,22 +203,6 @@
                     ></path>
                   </svg>
                 </button>
-
-                <app-delete-member-modal
-                  [isVisible]="isDeleteModalOpen"
-                  [member]="memberToDelete"
-                  (confirmed)="deleteMember()"
-                  (cancelled)="closeDeleteMemberModal()"
-                ></app-delete-member-modal>
-
-                <app-marriage-confirmation-modal
-                  [isVisible]="isMarriageConfirmationModalOpen"
-                  [memberId]="selectedMemberForMarriageConfirmation?.id"
-                  (modalClosed)="closeMarriageConfirmationModal()"
-                  (marriageConfirmed)="
-                    handleRelationshipActionCompleted($event)
-                  "
-                ></app-marriage-confirmation-modal>
               </div>
             </td>
           </tr>
@@ -324,16 +290,43 @@
   </div>
 </div>
 
-<app-add-member-form
-  [isVisible]="isAddModalOpen"
-  (memberAdded)="addMember($event)"
-  (cancelAdd)="closeAddMemberModal()"
->
-</app-add-member-form>
-
 <app-family-relationship
   *ngIf="showRelationships"
   [memberId]="selectedMemberId!"
   (backToList)="onBackToList()"
 >
 </app-family-relationship>
+
+<!-- Marriage request notification indicator -->
+<!-- <app-marriage-request-notification
+  [member]="member"
+></app-marriage-request-notification> -->
+
+<app-delete-member-modal
+  [isVisible]="isDeleteModalOpen"
+  [member]="memberToDelete"
+  (confirmed)="deleteMember()"
+  (cancelled)="closeDeleteMemberModal()"
+></app-delete-member-modal>
+
+<app-member-form
+  *ngIf="isFormModalVisible"
+  [isVisible]="isFormModalVisible"
+  [mode]="formMode"
+  [member]="formMember"
+  (memberSaved)="onMemberSaved($event)"
+  (cancelForm)="onFormCancelled()"
+></app-member-form>
+
+<app-verification-modal
+  [isVisible]="isVerificationModalOpen"
+  (confirmed)="verifyMember()"
+  (cancelled)="closeVerificationModal()"
+></app-verification-modal>
+
+<app-relationship-requests-modal
+  [isVisible]="showRelationshipModal"
+  [memberId]="selectedMemberId"
+  (modalClosed)="hideRelationshipModal()"
+  (relationshipActionCompleted)="handleRelationshipAction($event)"
+></app-relationship-requests-modal>

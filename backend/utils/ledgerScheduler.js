@@ -10,77 +10,24 @@ async function generateLedgersForType(ledgerType) {
       return;
     }
     
-    // Check if a ledger has been created recently for this type
-    const lastLedger = await Ledger.findOne({
-      where: { ledger_type_id: ledgerType.id },
-      order: [['invoice_created_at', 'DESC']]
-    });
+    // ... (previous code remains the same)
     
-    if (lastLedger) {
-      const now = new Date();
-      const lastCreationTime = new Date(lastLedger.invoice_created_at);
-      
-      // Calculate duration in milliseconds
-      let durationMs = 0;
-      switch (ledgerType.duration_unit) {
-        case 'minute':
-          durationMs = ledgerType.duration_value * 60 * 1000;
-          break;
-        case 'hour':
-          durationMs = ledgerType.duration_value * 60 * 60 * 1000;
-          break;
-        case 'day':
-          durationMs = ledgerType.duration_value * 24 * 60 * 60 * 1000;
-          break;
-        case 'month':
-          // Approximate a month as 30 days
-          durationMs = ledgerType.duration_value * 30 * 24 * 60 * 60 * 1000;
-          break;
-      }
-      
-      const elapsedMs = now.getTime() - lastCreationTime.getTime();
-      if (elapsedMs < durationMs) {
-        console.log(`Skipping ledger generation for ${ledgerType.name} - Not enough time has passed`);
-        return;
-      }
-    }
-    
-    // Build conditions from condition_config
-    const conditions = ledgerType.condition_config || {};
-    const whereClause = {};
-    
-    // Map the conditions from the config to the database fields
-    Object.keys(conditions).forEach(key => {
-      // Handle special case for 'deceased'
-      if (key === 'deceased') {
-        const boolValue = conditions[key].toLowerCase() === 'no' ? false : true;
-        whereClause[key] = boolValue;
-      } else {
-        whereClause[key] = conditions[key];
-      }
-    });
-    
-    // Find members that match the conditions
-    const members = await Member.findAll({ where: whereClause });
-    
-    if (members.length === 0) {
-      console.log(`No eligible members found for ledger type: ${ledgerType.name}`);
-      return;
-    }
-    
-    // Generate ledgers for each eligible member
+    // Generate ledgers for each eligible member using a for loop
     const now = new Date();
     const month = now.toLocaleString('default', { month: 'short' }).toLowerCase();
     const year = now.getFullYear();
-    const ledger_name = `${month}-${year}-${ledgerType.amount}`;
+    const ledger_name = `${ledgerType.name.toLowerCase()}-${month}-${year}`;
     
-    const ledgerPromises = members.map(member => {
+    const createdLedgers = [];
+    for (let i = 0; i < members.length; i++) {
+      const member = members[i];
+      
       // Calculate due date based on the ledger type configuration
       const due_date = ledgerType.calculateDueDate ? 
         ledgerType.calculateDueDate(now) : 
         new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // Default to 30 days if calculateDueDate not implemented
       
-      return Ledger.create({
+      const ledger = await Ledger.create({
         ledger_type_id: ledgerType.id,
         ledger_name,
         member_id: member.id,
@@ -91,9 +38,10 @@ async function generateLedgersForType(ledgerType) {
         total_amount: ledgerType.amount,
         invoice_status: 1 // Pending
       });
-    });
+      
+      createdLedgers.push(ledger);
+    }
     
-    const createdLedgers = await Promise.all(ledgerPromises);
     console.log(`Created ${createdLedgers.length} ledgers for ledger type: ${ledgerType.name}`);
     
     return createdLedgers.length;
@@ -105,29 +53,34 @@ async function generateLedgersForType(ledgerType) {
 
 // Function to check if a ledger should be generated based on its schedule
 async function shouldGenerateLedger(ledgerType) {
-  // Check if the ledger type has scheduled generation enabled
   if (!ledgerType.auto_generate) {
     console.log(`Auto-generation disabled for ledger type: ${ledgerType.name}`);
     return false;
   }
-  
+
+  const now = new Date();
+  const startDate = new Date(ledgerType.start_date);
+
+  // Prevent ledger generation before the start date
+  if (now < startDate) {
+    console.log(`Skipping ledger generation for ${ledgerType.name} - Start date not reached`);
+    return false;
+  }
+
   // Check when the last ledger was created for this type
   const lastLedger = await Ledger.findOne({
     where: { ledger_type_id: ledgerType.id },
     order: [['invoice_created_at', 'DESC']]
   });
-  
+
   if (!lastLedger) {
-    // If no ledger exists for this type, we should create one
-    return true;
+    return true; // No previous ledger exists, allow generation
   }
-  
-  // Calculate if enough time has passed based on the duration settings
-  const now = new Date();
+
+  // Calculate if enough time has passed based on duration settings
   const lastCreationTime = new Date(lastLedger.invoice_created_at);
-  
-  // Calculate the minimum interval in milliseconds
   let durationMs = 0;
+
   switch (ledgerType.duration_unit) {
     case 'minute':
       durationMs = ledgerType.duration_value * 60 * 1000;
@@ -139,14 +92,14 @@ async function shouldGenerateLedger(ledgerType) {
       durationMs = ledgerType.duration_value * 24 * 60 * 60 * 1000;
       break;
     case 'month':
-      // Approximate a month as 30 days
       durationMs = ledgerType.duration_value * 30 * 24 * 60 * 60 * 1000;
       break;
   }
-  
+
   const elapsedMs = now.getTime() - lastCreationTime.getTime();
   return elapsedMs >= durationMs;
 }
+
 
 // Set up scheduler with toggle functionality
 let schedulerJob = null;

@@ -109,6 +109,7 @@
                     <th class="px-4 py-3">Description</th>
                     <th class="px-4 py-3">Amount</th>
                     <th class="px-4 py-3">Fine</th>
+                    <th class="px-4 py-3">Start Date</th>
                     <th class="px-4 py-3">Interval</th>
                     <th class="px-4 py-3">Due Duration</th>
                     <th class="px-4 py-3">Filter Conditions</th>
@@ -132,6 +133,9 @@
                     </td>
                     <td class="px-4 py-3 text-sm">
                       {{ formatCurrency(ledger.fine_amount) }}
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                      {{ ledger.start_date }}
                     </td>
 
                     <td class="px-4 py-3 text-sm">

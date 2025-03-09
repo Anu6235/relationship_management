@@ -52,7 +52,7 @@ export class FamilyRelationshipComponent implements OnInit {
     this.memberService.getRelationships(this.memberId)
       .subscribe({
         next: (data) => {
-          this.relationshipData = data;
+          // this.relationshipData = data;
           this.loading = false;
         },
         error: (err) => {
@@ -76,15 +76,15 @@ export class FamilyRelationshipComponent implements OnInit {
   }
 
   confirmMarriage(marriageId: number): void {
-    this.memberService.confirmMarriage(marriageId).subscribe({
-      next: (response) => {
-        // Refresh relationship data
-        this.fetchRelationshipData();
-      },
-      error: (error) => {
-        console.error('Error confirming marriage:', error);
-      }
-    });
+  //   this.memberService.confirmMarriage(marriageId).subscribe({
+  //     next: (response) => {
+  //       // Refresh relationship data
+  //       this.fetchRelationshipData();
+  //     },
+  //     error: (error) => {
+  //       console.error('Error confirming marriage:', error);
+  //     }
+  //   });
   }
 
   // New method to handle image URLs

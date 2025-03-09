@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
   const ParentTable = sequelize.define('ParentTable', {
     husband_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true, 
       references: {
         model: 'members',
         key: 'id'
@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     wife_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true, 
       references: {
         model: 'members',
         key: 'id'
@@ -44,8 +44,13 @@ module.exports = (sequelize, DataTypes) => {
       }
     },    
     status: {
-      type: DataTypes.ENUM('pending', 'confirmed', 'divorced', 'widowed'),
+      type: DataTypes.ENUM('pending', 'confirmed', 'pending divorce', 'divorced', 'widowed'),
       defaultValue: 'pending',
+    },
+    is_current: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      comment: 'Whether this is the current active marriage for both members'
     }
   }, {
     tableName: 'parent_table',
@@ -57,9 +62,23 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'husband_id',
       as: 'husband'
     });
+    
     ParentTable.belongsTo(models.Member, {
       foreignKey: 'wife_id',
       as: 'wife'
+    });
+    
+    ParentTable.belongsTo(models.Member, {
+      foreignKey: 'deceased_spouse_id',
+      as: 'deceasedSpouse'
+    });
+    
+    // Add association for the many-to-many relationship with Member
+    ParentTable.belongsToMany(models.Member, {
+      through: 'MemberParentTable',
+      foreignKey: 'parent_table_id',
+      otherKey: 'member_id',
+      as: 'members'
     });
   };
 

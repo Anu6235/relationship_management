@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { LedgerType } = require('../models');
+const { LedgerType, Member } = require('../models');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
-const { route } = require('./memberRoutes');
 
 // Get all ledger types
 router.get('/', protect, async (req, res) => {
@@ -55,6 +54,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
         description, 
         amount, 
         is_active, 
+        start_date,
         duration_value, 
         duration_unit, 
         fine_amount,
@@ -68,6 +68,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
         description,
         amount,
         is_active,
+        start_date: start_date || new Date(),
         duration_value,
         duration_unit,
         fine_amount,
@@ -91,55 +92,64 @@ router.post('/', protect, adminOnly, async (req, res) => {
   
 // Update a ledger type
 router.put('/:id', protect, adminOnly, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { 
-        name, 
-        description, 
-        amount, 
-        is_active, 
-        duration_value, 
-        duration_unit, 
-        fine_amount,
-        fine_interval_value,
-        fine_interval_unit,
-        condition_config 
-      } = req.body;
-      
-      const ledgerType = await LedgerType.findByPk(id);
-      
-      if (!ledgerType) {
-        return res.status(404).json({
-          success: false,
-          message: 'Ledger type not found'
-        });
-      }
-      
-      await ledgerType.update({
-        name,
-        description,
-        amount,
-        is_active,
-        duration_value,
-        duration_unit,
-        fine_amount,
-        fine_interval_value,
-        fine_interval_unit,
-        condition_config
-      });
-      
-      res.status(200).json({
-        success: true,
-        data: ledgerType
-      });
-    } catch (error) {
-      console.error('Error updating ledger type:', error);
-      res.status(500).json({
+  try {
+    const { id } = req.params;
+    const { 
+      name, 
+      description, 
+      amount, 
+      is_active, 
+      start_date,
+      duration_value, 
+      duration_unit, 
+      fine_amount,
+      fine_interval_value,
+      fine_interval_unit,
+      condition_config 
+    } = req.body;
+    
+    const ledgerType = await LedgerType.findByPk(id);
+    
+    if (!ledgerType) {
+      return res.status(404).json({
         success: false,
-        message: error.message
+        message: 'Ledger type not found'
       });
     }
-  });
+    
+    // Ensure start_date is properly converted
+    const processedStartDate = start_date 
+      ? new Date(start_date) 
+      : new Date(); // Default to current date if not provided
+    
+    await ledgerType.update({
+      name,
+      description,
+      amount,
+      is_active,
+      start_date: processedStartDate, // Use processed date
+      duration_value,
+      duration_unit,
+      fine_amount,
+      fine_interval_value,
+      fine_interval_unit,
+      condition_config
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: ledgerType
+    });
+    console.log('Received start_date:', start_date);
+
+  } catch (error) {
+    console.error('Error updating ledger type:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 // Toggle ledger type activation
 router.put('/:id/toggle-activation', protect, adminOnly, async (req, res) => {
@@ -214,34 +224,20 @@ router.get('/:id/eligible-members', protect, adminOnly, async (req, res) => {
         });
       }
       
-      // Parse condition_config
-      const conditions = typeof ledgerType.condition_config === 'string' 
-        ? JSON.parse(ledgerType.condition_config) 
-        : ledgerType.condition_config || {};
-      
-      const whereClause = {};
-      
-      // Handle special case for deceased which is boolean
-      if ('deceased' in conditions) {
-        whereClause.deceased = conditions.deceased.toLowerCase() === 'no' ? false : true;
-        delete conditions.deceased;
-      }
-      
-      // Map the remaining conditions from the config to the database fields
-      Object.keys(conditions).forEach(key => {
-        whereClause[key] = conditions[key];
+      // Get all members and filter based on the ledger type's applicability method
+      const members = await Member.findAll({
+        attributes: ['id', 'first_name', 'last_name', 'email', 'status', 'gender', 'marital_status', 'deceased']
       });
       
-      // Find members that match the conditions
-      const members = await Member.findAll({ 
-        where: whereClause,
-        attributes: ['id', 'first_name', 'last_name', 'email', 'status', 'gender', 'marital_status'] 
-      });
+      // Filter members using the ledger type's isApplicableToMember method
+      const eligibleMembers = members.filter(member => 
+        ledgerType.isApplicableToMember(member)
+      );
       
       res.status(200).json({
         success: true,
-        count: members.length,
-        data: members
+        count: eligibleMembers.length,
+        data: eligibleMembers
       });
     } catch (error) {
       console.error('Error finding eligible members:', error);

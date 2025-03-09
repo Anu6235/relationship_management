@@ -15,17 +15,19 @@ export interface Member {
   verified_at: Date | null;
   status: "active" | "inactive";
   deceased: boolean;
-  marital_status: "Single" | "Married" | "Widowed" | "Divorced";
+  marital_status: "single" | "married" | "widowed" | "divorced";
   spouse_id?: number;
-  parent_id?: string;
+  parent_id?: number[] | string; 
   children?: string[];
   profile_picture?: string;
+  deceased_spouse_id?: number;
   marriage_date?: Date;
   divorce_date?: Date;
   death_date?: Date;
   pending_marriage_requests?: MarriageRequest[];
   spouse?: Member | null; 
-
+  husbandMarriages?: ParentTable[];
+  wifeMarriages?: ParentTable[];
   verifier?: {
     id: number,
     username: string,
@@ -54,11 +56,30 @@ export interface RelationshipResponse {
   };
 }
 
+export interface ParentTable {
+  id: number;
+  husband_id: number | null;
+  wife_id: number | null;
+  requested_by: number;
+  marriage_date?: Date;
+  divorce_date?: Date;
+  death_date?: Date;
+  deceased_spouse_id?: number;
+  status: 'pending' | 'confirmed' | 'divorced' | 'widowed';
+  is_current: boolean;
+  husband?: Member;
+  wife?: Member;
+  deceasedSpouse?: Member;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export interface MarriageData {
   husband_id: number;
   wife_id: number;
   marriage_date: Date;
-  status?: 'pending' | 'confirmed' | 'divorced';
+  status?: 'pending' | 'confirmed' | 'divorced' | 'widowed';
+  requested_by: number;
 }
 
 export interface DeathData {
@@ -73,5 +94,13 @@ export interface MarriageRequest {
   requestee_id: number;
   requestee?: Member;
   status: 'pending' | 'approved' | 'rejected';
-  created_at : Date | string;
+  created_at: Date | string;
+}
+
+export interface MemberFilterParams {
+  gender?: 'male' | 'female';
+  marital_status?: 'single' | 'married' | 'widowed' | 'divorced';
+  status?: 'active' | 'inactive';
+  is_verified?: boolean;
+  deceased?: boolean;
 }

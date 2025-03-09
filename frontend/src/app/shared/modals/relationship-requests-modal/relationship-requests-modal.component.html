@@ -1,9 +1,9 @@
-<!-- <div *ngIf="isVisible" class="modal-wrapper"> -->
-<!-- Modal overlay -->
-<!-- <div class="modal-overlay"></div> -->
+<div *ngIf="isVisible" class="modal-wrapper">
+  <!-- Modal overlay -->
+  <div class="modal-overlay"></div>
 
-<!-- Modal content -->
-<!-- <div class="modal-container">
+  <!-- Modal content -->
+  <div class="modal-container">
     <div class="modal-content">
       <div class="modal-header">
         <h3 class="text-xl font-semibold">Relationship Requests</h3>
@@ -12,31 +12,44 @@
         </button>
       </div>
 
-      <div class="modal-body"> -->
-<!-- Loading Spinner -->
-<!-- <div *ngIf="loading" class="flex justify-center my-6">
+      <div class="modal-body">
+        <!-- Error message -->
+        <div
+          *ngIf="error"
+          class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+        >
+          <p>{{ error }}</p>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div *ngIf="loading" class="flex justify-center my-6">
           <div
             class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
           ></div>
-        </div> -->
+        </div>
 
-<!-- No requests message -->
-<!-- <div
+        <!-- No requests message -->
+        <div
           *ngIf="
             !loading &&
+            !error &&
             (!marriageRequests || marriageRequests.length === 0) &&
             (!divorceRequests || divorceRequests.length === 0)
           "
           class="text-center mb-6 mt-4"
         >
           <p>No pending relationship requests found.</p>
-          <button type="button" class="mt-4 bg-blue-600" (click)="onCancel()">
+          <button
+            type="button"
+            class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            (click)="onCancel()"
+          >
             Close
           </button>
-        </div> -->
+        </div>
 
-<!-- Marriage Requests Section -->
-<!-- <div
+        <!-- Marriage Requests Section -->
+        <div
           *ngIf="!loading && marriageRequests && marriageRequests.length > 0"
           class="mb-8"
         >
@@ -47,6 +60,10 @@
           <div
             *ngFor="let request of marriageRequests"
             class="border rounded-lg p-4 mb-4 shadow-sm"
+            [ngClass]="{
+              'border-blue-300 bg-blue-50': !request.isProposer,
+              'border-gray-300 bg-gray-50': request.isProposer
+            }"
           >
             <div class="flex items-center mb-4">
               <div
@@ -66,12 +83,21 @@
                   {{ request.partner?.first_name }}
                   {{ request.partner?.last_name }}
                 </p>
-                <p class="text-sm text-gray-600">
+                <p
+                  class="text-sm"
+                  [ngClass]="{
+                    'text-blue-600 font-semibold': !request.isProposer,
+                    'text-gray-600': request.isProposer
+                  }"
+                >
                   {{
                     request.isProposer
                       ? "Awaiting response"
                       : "Wants to marry you"
                   }}
+                </p>
+                <p *ngIf="request.timestamp" class="text-xs text-gray-500 mt-1">
+                  Requested on {{ request.timestamp | date : "MMM d, y" }}
                 </p>
               </div>
             </div>
@@ -96,7 +122,7 @@
               <button
                 *ngIf="!request.isProposer"
                 type="button"
-                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                 (click)="rejectMarriage(request.id)"
               >
                 Decline
@@ -104,24 +130,37 @@
               <button
                 *ngIf="!request.isProposer"
                 type="button"
-                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                 (click)="confirmMarriage(request.id)"
               >
                 Accept
               </button>
-              <button
+              <div
                 *ngIf="request.isProposer"
-                class="px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed"
-                disabled
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded inline-flex items-center"
               >
+                <svg
+                  class="w-4 h-4 mr-2 animate-pulse"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
                 Awaiting Response
-              </button>
+              </div>
             </div>
           </div>
-        </div> -->
+        </div>
 
-<!-- Divorce Requests Section -->
-<!-- <div
+        <!-- Divorce Requests Section -->
+        <div
           *ngIf="!loading && divorceRequests && divorceRequests.length > 0"
           class="mb-4"
         >
@@ -132,6 +171,10 @@
           <div
             *ngFor="let request of divorceRequests"
             class="border rounded-lg p-4 mb-4 shadow-sm"
+            [ngClass]="{
+              'border-red-300 bg-red-50': !request.isProposer,
+              'border-gray-300 bg-gray-50': request.isProposer
+            }"
           >
             <div class="flex items-center mb-4">
               <div
@@ -151,12 +194,21 @@
                   {{ request.partner?.first_name }}
                   {{ request.partner?.last_name }}
                 </p>
-                <p class="text-sm text-gray-600">
+                <p
+                  class="text-sm"
+                  [ngClass]="{
+                    'text-red-600 font-semibold': !request.isProposer,
+                    'text-gray-600': request.isProposer
+                  }"
+                >
                   {{
                     request.isProposer
                       ? "Awaiting response"
                       : "Requests divorce"
                   }}
+                </p>
+                <p *ngIf="request.timestamp" class="text-xs text-gray-500 mt-1">
+                  Requested on {{ request.timestamp | date : "MMM d, y" }}
                 </p>
               </div>
             </div>
@@ -181,7 +233,7 @@
               <button
                 *ngIf="!request.isProposer"
                 type="button"
-                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                 (click)="rejectDivorce(request.id)"
               >
                 Decline
@@ -189,22 +241,35 @@
               <button
                 *ngIf="!request.isProposer"
                 type="button"
-                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                 (click)="confirmDivorce(request.id)"
               >
                 Accept
               </button>
-              <button
+              <div
                 *ngIf="request.isProposer"
-                class="px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed"
-                disabled
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded inline-flex items-center"
               >
+                <svg
+                  class="w-4 h-4 mr-2 animate-pulse"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
                 Awaiting Response
-              </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div> -->
+</div>

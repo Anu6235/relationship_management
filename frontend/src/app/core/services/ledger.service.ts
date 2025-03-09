@@ -29,11 +29,31 @@ getLedgerTypeById(id: number): Observable<SingleLedgerTypeResponse> {
 }
 
 createLedgerType(ledgerType: Partial<LedgerType>): Observable<SingleLedgerTypeResponse> {
-  return this.http.post<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types`, ledgerType);
+  // Ensure start_date is converted to ISO string if it exists
+  const processedLedgerType: any = { ...ledgerType };
+
+  if (processedLedgerType.start_date) {
+    processedLedgerType.start_date = 
+      processedLedgerType.start_date instanceof Date 
+        ? processedLedgerType.start_date.toISOString() 
+        : new Date(processedLedgerType.start_date).toISOString();
+  }
+
+  console.log('Create Ledger Type - Processed Data:', processedLedgerType);
+  
+  return this.http.post<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types`, processedLedgerType);
 }
 
 updateLedgerType(id: number, ledgerType: Partial<LedgerType>): Observable<SingleLedgerTypeResponse> {
-  return this.http.put<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types/${id}`, ledgerType);
+  const processedLedgerType: any = { ...ledgerType };
+
+  if (processedLedgerType.start_date) {
+    // Ensure UTC conversion
+    const utcDate = new Date(processedLedgerType.start_date);
+    processedLedgerType.start_date = utcDate.toISOString();
+  }
+
+  return this.http.put<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types/${id}`, processedLedgerType);
 }
 
 toggleLedgerTypeActivation(id: number): Observable<SingleLedgerTypeResponse> {
@@ -105,5 +125,12 @@ checkLastLedgerCreationTime(ledgerTypeId: number): Observable<any> {
 
 getNextScheduledGeneration(ledgerTypeId: number): Observable<any> {
   return this.http.get<any>(`${this.baseUrl}/ledger-types/${ledgerTypeId}/next-generation`);
+}
+
+setLedgerTypeStartDate(id: number, startDate: Date): Observable<SingleLedgerTypeResponse> {
+  return this.http.put<SingleLedgerTypeResponse>(
+    `${this.baseUrl}/ledger-types/${id}/start-date`, 
+    { start_date: startDate.toISOString() }
+  );
 }
 }

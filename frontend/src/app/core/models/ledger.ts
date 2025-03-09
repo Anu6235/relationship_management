@@ -23,6 +23,7 @@ export interface Ledger {
     description: string;
     amount: number;
     is_active: boolean;
+    start_date?: Date; 
     duration_value: number;
     duration_unit: 'minute' | 'hour' | 'day' | 'month';
     fine_amount: number;
