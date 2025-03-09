@@ -16,9 +16,9 @@
 
   <div *ngIf="!loading && !error && relationshipData">
     <!-- Member Info -->
-    <div class="card">
-      <div class="flex-row items-center mb-4">
-        <div class="avatar-container avatar-medium">
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+      <div class="flex items-center mb-4">
+        <div class="avatar-container avatar-medium mr-4">
           <img
             *ngIf="relationshipData.member.profile_image"
             [src]="getImageUrl(relationshipData.member.profile_image)"
@@ -88,60 +88,19 @@
             <span class="font-medium">Address:</span>
             {{ relationshipData.member.address }}
           </p>
-          <p class="text-sm">
+          <p class="text-sm" *ngIf="relationshipData.member.status">
             <span class="font-medium">Status:</span>
             <span [ngClass]="getStatus(relationshipData.member.status)">{{
               toSentenceCase(relationshipData.member.status)
             }}</span>
           </p>
-          <p class="text-sm">
+          <p
+            class="text-sm"
+            *ngIf="relationshipData.member.is_verified !== undefined"
+          >
             <span class="font-medium">Verified:</span>
             {{ getBooleanText(relationshipData.member.is_verified) }}
           </p>
-        </div>
-      </div>
-
-      <!-- Marriage Requests Section -->
-      <div
-        *ngIf="
-          relationshipData.member.pending_marriage_requests &&
-          relationshipData.member.pending_marriage_requests.length > 0
-        "
-        class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md"
-      >
-        <h3 class="text-lg font-medium text-yellow-800 mb-2">
-          Pending Marriage Requests
-        </h3>
-        <div
-          *ngFor="
-            let request of relationshipData.member.pending_marriage_requests
-          "
-          class="mb-2 p-3 bg-white rounded shadow-sm"
-        >
-          <div class="flex justify-between items-center">
-            <div>
-              <p class="font-medium">
-                Request from: {{ request.requester?.first_name }}
-                {{ request.requester?.last_name }}
-              </p>
-              <p class="text-sm text-gray-600">
-                Requested on: {{ formatDate(request.created_at) }}
-              </p>
-            </div>
-            <div>
-              <button
-                (click)="confirmMarriage(request.id)"
-                class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 mr-2"
-              >
-                Confirm
-              </button>
-              <button
-                class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -151,152 +110,334 @@
       *ngIf="relationshipData.spouse"
       class="bg-white shadow-md rounded-lg p-6 mb-6"
     >
-      <h3 class="text-lg font-medium text-gray-800 mb-4">Spouse</h3>
+      <h3 class="text-lg font-medium text-gray-800 mb-4">Current Spouse</h3>
       <div class="flex items-center">
-        <div class="flex-row items-center">
-          <div class="avatar-container avatar-medium">
-            <img
-              *ngIf="relationshipData.spouse.profile_image"
-              [src]="getImageUrl(relationshipData.spouse.profile_image)"
-              class="avatar-image"
-              (error)="handleImageError($event, relationshipData.spouse)"
-              alt="{{ relationshipData.spouse.first_name }} {{
-                relationshipData.spouse.last_name
-              }}"
-            />
-            <div
-              *ngIf="!relationshipData.spouse.profile_image"
-              class="avatar-initials"
+        <div class="avatar-container avatar-medium mr-4">
+          <img
+            *ngIf="relationshipData.spouse.profile_image"
+            [src]="getImageUrl(relationshipData.spouse.profile_image)"
+            class="avatar-image"
+            (error)="handleImageError($event, relationshipData.spouse)"
+            alt="{{ relationshipData.spouse.first_name }} {{
+              relationshipData.spouse.last_name
+            }}"
+          />
+          <div
+            *ngIf="!relationshipData.spouse.profile_image"
+            class="avatar-initials"
+          >
+            {{ relationshipData.spouse.first_name.charAt(0)
+            }}{{ relationshipData.spouse.last_name.charAt(0) }}
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-lg font-medium text-gray-800">
+            <a
+              (click)="navigateToMember(relationshipData.spouse.id)"
+              class="text-blue-600 hover:underline cursor-pointer"
             >
-              {{ relationshipData.spouse.first_name.charAt(0)
-              }}{{ relationshipData.spouse.last_name.charAt(0) }}
+              {{ relationshipData.spouse.first_name }}
+              {{ relationshipData.spouse.last_name }}
+            </a>
+          </h4>
+          <p class="text-sm text-gray-600">
+            <span
+              [ngClass]="getGenderClass(relationshipData.spouse.gender)"
+              class="px-2 py-1 rounded text-xs font-medium"
+            >
+              {{ toSentenceCase(relationshipData.spouse.gender) }}
+            </span>
+            <span
+              *ngIf="relationshipData.spouse.marriage_date"
+              class="ml-2 text-sm"
+            >
+              Married on:
+              {{ formatDate(relationshipData.spouse.marriage_date) }}
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Past Marriages Sections -->
+    <!-- Divorced Spouses -->
+    <div
+      *ngIf="
+        relationshipData.divorced_spouses &&
+        relationshipData.divorced_spouses.length > 0
+      "
+      class="bg-white shadow-md rounded-lg p-6 mb-6"
+    >
+      <h3 class="text-lg font-medium text-gray-800 mb-4">
+        Former Spouses (Divorced)
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div
+          *ngFor="let spouse of relationshipData.divorced_spouses"
+          class="border rounded-lg p-4 flex items-center"
+        >
+          <div class="avatar-container avatar-small mr-3">
+            <img
+              *ngIf="spouse.profile_image"
+              [src]="getImageUrl(spouse.profile_image)"
+              class="avatar-image"
+              (error)="handleImageError($event, spouse)"
+              alt="{{ spouse.first_name }} {{ spouse.last_name }}"
+            />
+            <div *ngIf="!spouse.profile_image" class="avatar-initials">
+              {{ spouse.first_name.charAt(0) }}{{ spouse.last_name.charAt(0) }}
             </div>
           </div>
 
           <div>
-            <h4 class="text-lg font-medium text-gray-800">
+            <h4 class="font-medium">
               <a
-                (click)="navigateToMember(relationshipData.spouse.id)"
+                (click)="navigateToMember(spouse.id)"
                 class="text-blue-600 hover:underline cursor-pointer"
               >
-                {{ relationshipData.spouse.first_name }}
-                {{ relationshipData.spouse.last_name }}
+                {{ spouse.first_name }} {{ spouse.last_name }}
               </a>
             </h4>
-            <p class="text-sm text-gray-600">
+            <p class="text-xs text-gray-600">
               <span
-                [ngClass]="getGenderClass(relationshipData.spouse.gender)"
+                [ngClass]="getGenderClass(spouse.gender)"
                 class="px-2 py-1 rounded text-xs font-medium"
               >
-                {{ toSentenceCase(relationshipData.spouse.gender) }}
+                {{ toSentenceCase(spouse.gender) }}
               </span>
-              <span
-                *ngIf="relationshipData.spouse.marriage_date"
-                class="ml-2 text-sm"
-              >
-                Married on:
-                {{ formatDate(relationshipData.spouse.marriage_date) }}
+              <span *ngIf="spouse.marriage_date" class="ml-2">
+                Married: {{ formatDate(spouse.marriage_date) }}
+              </span>
+              <span *ngIf="spouse.divorce_date" class="ml-2">
+                Divorced: {{ formatDate(spouse.divorce_date) }}
               </span>
             </p>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Children Section -->
-      <div
-        *ngIf="
-          relationshipData.children && relationshipData.children.length > 0
-        "
-        class="bg-white shadow-md rounded-lg p-6 mb-6"
-      >
-        <h3 class="text-lg font-medium text-gray-800 mb-4">
-          Children ({{ relationshipData.children.length }})
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div
-            *ngFor="let child of relationshipData.children"
-            class="border rounded-lg p-4 flex items-center"
-          >
-            <div class="avatar-container avatar-medium">
-              <img
-                *ngIf="child.profile_image"
-                [src]="getImageUrl(child.profile_image)"
-                class="avatar-image"
-                (error)="handleImageError($event, child)"
-                alt="{{ child.first_name }} {{ child.last_name }}"
-              />
-              <div *ngIf="!child.profile_image" class="avatar-initials">
-                {{ child.first_name.charAt(0) }}{{ child.last_name.charAt(0) }}
+    <!-- Widowed Spouses -->
+    <div
+      *ngIf="
+        relationshipData.widowed_spouses &&
+        relationshipData.widowed_spouses.length > 0
+      "
+      class="bg-white shadow-md rounded-lg p-6 mb-6"
+    >
+      <h3 class="text-lg font-medium text-gray-800 mb-4">
+        Former Spouses (Widowed)
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div
+          *ngFor="let spouse of relationshipData.widowed_spouses"
+          class="border rounded-lg p-4 flex items-center"
+        >
+          <div class="avatar-container avatar-small mr-3">
+            <img
+              *ngIf="spouse.profile_image"
+              [src]="getImageUrl(spouse.profile_image)"
+              class="avatar-image"
+              (error)="handleImageError($event, spouse)"
+              alt="{{ spouse.first_name }} {{ spouse.last_name }}"
+            />
+            <div *ngIf="!spouse.profile_image" class="avatar-initials">
+              {{ spouse.first_name.charAt(0) }}{{ spouse.last_name.charAt(0) }}
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-medium">
+              <a
+                (click)="navigateToMember(spouse.id)"
+                class="text-blue-600 hover:underline cursor-pointer"
+              >
+                {{ spouse.first_name }} {{ spouse.last_name }}
+              </a>
+            </h4>
+            <p class="text-xs text-gray-600">
+              <span
+                [ngClass]="getGenderClass(spouse.gender)"
+                class="px-2 py-1 rounded text-xs font-medium"
+              >
+                {{ toSentenceCase(spouse.gender) }}
+              </span>
+              <span *ngIf="spouse.marriage_date" class="ml-2">
+                Married: {{ formatDate(spouse.marriage_date) }}
+              </span>
+              <span *ngIf="spouse.death_date" class="ml-2">
+                Deceased: {{ formatDate(spouse.death_date) }}
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Marriage Requests -->
+    <div
+      *ngIf="
+        relationshipData.pending_spouses &&
+        relationshipData.pending_spouses.length > 0
+      "
+      class="bg-white shadow-md rounded-lg p-6 mb-6"
+    >
+      <h3 class="text-lg font-medium text-gray-800 mb-4">
+        Pending Marriage Requests
+      </h3>
+      <div class="space-y-4">
+        <div
+          *ngFor="let request of relationshipData.pending_spouses"
+          class="p-4 bg-yellow-50 border border-yellow-200 rounded-md"
+        >
+          <div class="flex justify-between items-center">
+            <div class="flex items-center">
+              <div class="avatar-container avatar-small mr-3">
+                <img
+                  *ngIf="request.profile_image"
+                  [src]="getImageUrl(request.profile_image)"
+                  class="avatar-image"
+                  (error)="handleImageError($event, request)"
+                  alt="{{ request.first_name }} {{ request.last_name }}"
+                />
+                <div *ngIf="!request.profile_image" class="avatar-initials">
+                  {{ request.first_name.charAt(0)
+                  }}{{ request.last_name.charAt(0) }}
+                </div>
+              </div>
+              <div>
+                <p class="font-medium">
+                  {{ request.first_name }} {{ request.last_name }}
+                </p>
+                <p class="text-sm text-gray-600">
+                  {{
+                    request.is_outgoing
+                      ? "Request sent by you"
+                      : "Request sent to you"
+                  }}
+                  on {{ formatDate(request.created_at) }}
+                </p>
               </div>
             </div>
 
-            <div>
-              <h4 class="font-medium">
-                <a
-                  (click)="navigateToMember(child.id)"
-                  class="text-blue-600 hover:underline cursor-pointer"
-                >
-                  {{ child.first_name }} {{ child.last_name }}
-                </a>
-              </h4>
-              <p class="text-xs text-gray-600">
-                <span
-                  [ngClass]="getGenderClass(child.gender)"
-                  class="px-2 py-1 rounded text-xs font-medium"
-                >
-                  {{ toSentenceCase(child.gender) }}
-                </span>
-                <span class="ml-2">{{ formatDate(child.dob) }}</span>
-              </p>
+            <div *ngIf="!request.is_outgoing">
+              <button>Accept</button>
+              <button
+                class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Reject
+              </button>
+            </div>
+            <div *ngIf="request.is_outgoing">
+              <span class="text-sm text-gray-600">Awaiting response</span>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Parents Section -->
-      <div
-        *ngIf="relationshipData.parents && relationshipData.parents.length > 0"
-        class="bg-white shadow-md rounded-lg p-6 mb-6"
-      >
-        <h3 class="text-lg font-medium text-gray-800 mb-4">Parents</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div
-            *ngFor="let parent of relationshipData.parents"
-            class="border rounded-lg p-4 flex items-center"
-          >
-            <div class="avatar-container avatar-small">
-              <img
-                *ngIf="parent.profile_image"
-                [src]="getImageUrl(parent.profile_image)"
-                class="avatar-image"
-                (error)="handleImageError($event, parent)"
-                alt="{{ parent.first_name }} {{ parent.last_name }}"
-              />
-              <div *ngIf="!parent.profile_image" class="avatar-initials">
-                {{ parent.first_name.charAt(0)
-                }}{{ parent.last_name.charAt(0) }}
-              </div>
+    <!-- Children Section -->
+    <div
+      *ngIf="relationshipData.children && relationshipData.children.length > 0"
+      class="bg-white shadow-md rounded-lg p-6 mb-6"
+    >
+      <h3 class="text-lg font-medium text-gray-800 mb-4">
+        Children ({{ relationshipData.children.length }})
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          *ngFor="let child of relationshipData.children"
+          class="border rounded-lg p-4 flex items-center"
+        >
+          <div class="avatar-container avatar-medium mr-3">
+            <img
+              *ngIf="child.profile_image"
+              [src]="getImageUrl(child.profile_image)"
+              class="avatar-image"
+              (error)="handleImageError($event, child)"
+              alt="{{ child.first_name }} {{ child.last_name }}"
+            />
+            <div *ngIf="!child.profile_image" class="avatar-initials">
+              {{ child.first_name.charAt(0) }}{{ child.last_name.charAt(0) }}
             </div>
+          </div>
 
-            <div>
-              <h4 class="font-medium">
-                <a
-                  (click)="navigateToMember(parent.id)"
-                  class="text-blue-600 hover:underline cursor-pointer"
-                >
-                  {{ parent.first_name }} {{ parent.last_name }}
-                </a>
-              </h4>
-              <p class="text-xs text-gray-600">
-                <span
-                  [ngClass]="getGenderClass(parent.gender)"
-                  class="px-2 py-1 rounded text-xs font-medium"
-                >
-                  {{ toSentenceCase(parent.gender) }}
-                </span>
-                <span class="ml-2">{{ formatDate(parent.dob) }}</span>
-              </p>
+          <div>
+            <h4 class="font-medium">
+              <a
+                (click)="navigateToMember(child.id)"
+                class="text-blue-600 hover:underline cursor-pointer"
+              >
+                {{ child.first_name }} {{ child.last_name }}
+              </a>
+            </h4>
+            <p class="text-xs text-gray-600">
+              <span
+                [ngClass]="getGenderClass(child.gender)"
+                class="px-2 py-1 rounded text-xs font-medium"
+              >
+                {{ toSentenceCase(child.gender) }}
+              </span>
+              <span class="ml-2">{{ formatDate(child.dob) }}</span>
+            </p>
+            <p class="text-xs mt-1" *ngIf="child.relationship_type">
+              <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                {{ toSentenceCase(child.relationship_type) }}
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parents Section -->
+    <div
+      *ngIf="relationshipData.parents && relationshipData.parents.length > 0"
+      class="bg-white shadow-md rounded-lg p-6 mb-6"
+    >
+      <h3 class="text-lg font-medium text-gray-800 mb-4">Parents</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div
+          *ngFor="let parent of relationshipData.parents"
+          class="border rounded-lg p-4 flex items-center"
+        >
+          <div class="avatar-container avatar-medium mr-3">
+            <img
+              *ngIf="parent.profile_image"
+              [src]="getImageUrl(parent.profile_image)"
+              class="avatar-image"
+              (error)="handleImageError($event, parent)"
+              alt="{{ parent.first_name }} {{ parent.last_name }}"
+            />
+            <div *ngIf="!parent.profile_image" class="avatar-initials">
+              {{ parent.first_name.charAt(0) }}{{ parent.last_name.charAt(0) }}
             </div>
+          </div>
+
+          <div>
+            <h4 class="font-medium">
+              <a
+                (click)="navigateToMember(parent.id)"
+                class="text-blue-600 hover:underline cursor-pointer"
+              >
+                {{ parent.first_name }} {{ parent.last_name }}
+              </a>
+            </h4>
+            <p class="text-xs text-gray-600">
+              <span
+                [ngClass]="getGenderClass(parent.gender)"
+                class="px-2 py-1 rounded text-xs font-medium"
+              >
+                {{ toSentenceCase(parent.gender) }}
+              </span>
+              <span class="ml-2">{{ formatDate(parent.dob) }}</span>
+            </p>
+            <p class="text-xs mt-1" *ngIf="parent.relationship_type">
+              <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                {{ toSentenceCase(parent.relationship_type) }}
+              </span>
+            </p>
           </div>
         </div>
       </div>

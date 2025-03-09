@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { ParentTable } from '../models/member';
 import {
   DeathData,
   MarriageData,
@@ -9,6 +10,7 @@ import {
   RelationshipResponse,
   SingleMemberResponse,
 } from '../models/member';
+
 
 @Injectable({
   providedIn: 'root',
@@ -144,6 +146,20 @@ export class MemberService {
   // Get pending marriage requests for a member
   getPendingMarriageRequests(memberId: number): Observable<any> {
     return this.http.get<any>(`${this.API_URL}/marriage-requests/${memberId}`).pipe(
+      map(response => {
+        // Process image URLs for husband and wife in each request
+        if (response.data && Array.isArray(response.data)) {
+          response.data.forEach((request: ParentTable) => {
+            if (request.husband) {
+              request.husband = this.processImageUrls(request.husband);
+            }
+            if (request.wife) {
+              request.wife = this.processImageUrls(request.wife);
+            }
+          });
+        }
+        return response;
+      }),
       catchError(this.handleError)
     );
   }
@@ -212,9 +228,63 @@ getPendingDivorceRequests(memberId: number): Observable<any> {
   // Get all relationships for a member
   getRelationships(memberId: number): Observable<RelationshipResponse> {
     return this.http.get<RelationshipResponse>(`${this.API_URL}/${memberId}/relationships`).pipe(
+      map(response => {
+        // Process all member objects that have images
+        if (response.data) {
+          if (response.data.member) {
+            response.data.member = this.processImageUrls(response.data.member);
+          }
+          
+          // Process relationship objects
+          const relationships = response.data.relationships;
+          if (relationships) {
+            // Process spouse
+            if (relationships.spouse) {
+              relationships.spouse = this.processImageUrls(relationships.spouse);
+            }
+            
+            // Process divorced spouses
+            if (relationships.divorced_spouses && Array.isArray(relationships.divorced_spouses)) {
+              relationships.divorced_spouses = relationships.divorced_spouses.map(spouse => 
+                this.processImageUrls(spouse)
+              );
+            }
+            
+            // Process widowed spouses
+            if (relationships.widowed_spouses && Array.isArray(relationships.widowed_spouses)) {
+              relationships.widowed_spouses = relationships.widowed_spouses.map(spouse => 
+                this.processImageUrls(spouse)
+              );
+            }
+            
+            // Process pending spouses
+            if (relationships.pending_spouses && Array.isArray(relationships.pending_spouses)) {
+              relationships.pending_spouses = relationships.pending_spouses.map(spouse => 
+                this.processImageUrls(spouse)
+              );
+            }
+            
+            // Process children
+            if (relationships.children && Array.isArray(relationships.children)) {
+              relationships.children = relationships.children.map(child => 
+                this.processImageUrls(child)
+              );
+            }
+            
+            // Process parents
+            if (relationships.parents && Array.isArray(relationships.parents)) {
+              relationships.parents = relationships.parents.map(parent => 
+                this.processImageUrls(parent)
+              );
+            }
+          }
+        }
+        return response;
+      }),
       catchError(this.handleError)
     );
   }
+
 
   // Get all marriages for a member
   getMemberMarriages(memberId: number): Observable<any> {

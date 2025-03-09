@@ -4,6 +4,21 @@ import { Router } from '@angular/router';
 import { Member } from '../../../core/models/member';
 import { MemberService } from '../../../core/services/member.service';
 
+interface RelationshipResponse {
+  success: boolean;
+  data: {
+    member: Member;
+    relationships: {
+      spouse: Member | null;
+      divorced_spouses: Member[];
+      widowed_spouses: Member[];
+      pending_spouses: any[]; 
+      children: Member[];
+      parents: Member[];
+      marriages: any[];
+    }
+  };
+}
 
 @Component({
   selector: 'app-family-relationship',
@@ -19,8 +34,12 @@ export class FamilyRelationshipComponent implements OnInit {
   relationshipData: {
     member: Member;
     spouse: Member | null;
+    divorced_spouses: Member[];
+    widowed_spouses: Member[];
+    pending_spouses: any[]; // Changed to match the updated interface
     children: Member[];
     parents: Member[];
+    marriages: any[];
   } | null = null;
   
   loading = true;
@@ -34,7 +53,7 @@ export class FamilyRelationshipComponent implements OnInit {
   ) {
     // Set the base URL for API calls
     // Replace with your actual API URL from environment config if available
-    this.baseUrl ='http://localhost:5000';
+    this.baseUrl = 'http://localhost:5000';
   }
 
   ngOnInit(): void {
@@ -51,8 +70,23 @@ export class FamilyRelationshipComponent implements OnInit {
     this.loading = true;
     this.memberService.getRelationships(this.memberId)
       .subscribe({
-        next: (data) => {
-          // this.relationshipData = data;
+        next: (response: RelationshipResponse) => {
+          if (response.success && response.data) {
+            // Service now handles image URL processing, so we can directly use the data
+            this.relationshipData = {
+              member: response.data.member,
+              spouse: response.data.relationships.spouse,
+              divorced_spouses: response.data.relationships.divorced_spouses,
+              widowed_spouses: response.data.relationships.widowed_spouses,
+              pending_spouses: response.data.relationships.pending_spouses,
+              children: response.data.relationships.children,
+              parents: response.data.relationships.parents,
+              marriages: response.data.relationships.marriages
+            };
+          } else {
+            this.error = true;
+            this.errorMessage = 'Invalid data format received';
+          }
           this.loading = false;
         },
         error: (err) => {
@@ -75,39 +109,24 @@ export class FamilyRelationshipComponent implements OnInit {
     }
   }
 
-  confirmMarriage(marriageId: number): void {
-  //   this.memberService.confirmMarriage(marriageId).subscribe({
-  //     next: (response) => {
-  //       // Refresh relationship data
-  //       this.fetchRelationshipData();
-  //     },
-  //     error: (error) => {
-  //       console.error('Error confirming marriage:', error);
-  //     }
-  //   });
+  confirmMarriage(marriageId: number, respondingMemberId: number): void {
+    this.memberService.confirmMarriage(marriageId, respondingMemberId)
+      .subscribe(
+        response => {
+          // Handle success
+          console.log('Marriage confirmed successfully', response);
+        },
+        error => {
+          // Handle error
+          console.error('Error confirming marriage', error);
+        }
+      );
   }
 
-  // New method to handle image URLs
+  // Since the service now handles image URLs, this is simplified
   getImageUrl(imagePath: string | null): string {
-    if (!imagePath) return '';
-    
-    // If the path is already a full URL, return it as is
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-    
-    // Otherwise, join with the base URL
-    // Make sure the path doesn't have leading slash if baseUrl ends with slash
-    if (imagePath.startsWith('/') && this.baseUrl.endsWith('/')) {
-      return this.baseUrl + imagePath.substring(1);
-    }
-    
-    // Make sure we have a slash between baseUrl and imagePath
-    if (!this.baseUrl.endsWith('/') && !imagePath.startsWith('/')) {
-      return `${this.baseUrl}/${imagePath}`;
-    }
-    
-    return this.baseUrl + imagePath;
+    // Image paths should already be processed by the service
+    return imagePath || '';
   }
 
   handleImageError(event: any, member: Member) {
@@ -127,7 +146,7 @@ export class FamilyRelationshipComponent implements OnInit {
     
     // Otherwise create a new initials div
     const initialsDiv = document.createElement('div');
-    initialsDiv.className = 'w-full h-full flex items-center justify-center bg-blue-500 text-white rounded-full';
+    initialsDiv.className = 'avatar-initials';
     const initials = `${member.first_name.charAt(0)}${member.last_name.charAt(0)}`;
     initialsDiv.textContent = initials;
     
@@ -149,7 +168,7 @@ export class FamilyRelationshipComponent implements OnInit {
   }
 
   getGenderClass(gender: string): string {
-    if (!gender) return 'gender-default';
+    if (!gender) return 'bg-gray-100 text-gray-800 gender-default';
     
     switch (gender.toLowerCase().trim()) {
       case 'male':
@@ -162,7 +181,7 @@ export class FamilyRelationshipComponent implements OnInit {
   }
 
   getStatus(status: string): string {
-    if (!status) return 'status-default';
+    if (!status) return 'text-gray-600 status-default';
     
     switch (status.toLowerCase().trim()) {
       case 'active':
@@ -177,7 +196,7 @@ export class FamilyRelationshipComponent implements OnInit {
   }
 
   getMaritalStatus(status: string): string {
-    if (!status) return 'marital-default';
+    if (!status) return 'bg-gray-100 text-gray-800 marital-default';
     
     switch (status.toLowerCase().trim()) {
       case 'single':

@@ -27,6 +27,7 @@ export interface Member {
   pending_marriage_requests?: MarriageRequest[];
   spouse?: Member | null; 
   husbandMarriages?: ParentTable[];
+  relationship_type?: string; 
   wifeMarriages?: ParentTable[];
   verifier?: {
     id: number,
@@ -50,9 +51,15 @@ export interface RelationshipResponse {
   success: boolean;
   data: {
     member: Member;
-    spouse: Member | null;
-    children: Member[];
-    parents: Member[]
+    relationships: {
+      spouse: Member | null;
+      divorced_spouses: Member[];
+      widowed_spouses: Member[];
+      pending_spouses: Member[];
+      children: Member[];
+      parents: Member[];
+      marriages: ParentTable[];
+    }
   };
 }
 
