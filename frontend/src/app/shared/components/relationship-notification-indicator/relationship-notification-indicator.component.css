@@ -1,0 +1,30 @@
+.notification-wrapper {
+    position: relative;
+    display: inline-block;
+    /* No dimensions here - let the parent/content define size */
+  }
+  
+  .notification-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid white;
+    z-index: 10;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    pointer-events: none; /* Ensures clicks pass through to parent */
+  }
+  
+  .green-dot {
+    background-color: #22c55e; /* Green for marriage requests */
+  }
+  
+  .red-dot {
+    background-color: #ef4444; /* Red for divorce requests */
+  }
+  
+  .yellow-dot {
+    background-color: #eab308; /* Yellow for both types of requests */
+  }

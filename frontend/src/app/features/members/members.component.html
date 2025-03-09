@@ -59,17 +59,19 @@
           >
             <td class="px-4 py-3">
               <div class="flex items-center">
-                <div
-                  class="relative cursor-pointer w-12 h-12 rounded-full md:block"
-                  (click)="openMarriageConfirmationModal(member)"
+                <app-relationship-notification-indicator
+                  [member]="member"
+                  (requestAction)="openMarriageConfirmationModal(member)"
                 >
-                  <img
-                    [src]="member.profile_image_url"
-                    alt="{{ member.first_name }} {{ member.last_name }}"
-                    class="profile-image w-full h-full object-cover rounded-full"
-                    (error)="handleImageError($event, member)"
-                  />
-                </div>
+                  <div class="relative w-12 h-12 rounded-full md:block">
+                    <img
+                      [src]="member.profile_image_url"
+                      alt="{{ member.first_name }} {{ member.last_name }}"
+                      class="profile-image w-full h-full object-cover rounded-full"
+                      (error)="handleImageError($event, member)"
+                    />
+                  </div>
+                </app-relationship-notification-indicator>
               </div>
             </td>
             <td class="px-4 py-3 text-sm font-semibold">

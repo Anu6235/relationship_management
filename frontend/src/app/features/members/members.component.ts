@@ -11,6 +11,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FamilyRelationshipComponent } from '../../shared/components/family-relationship/family-relationship.component';
 import { RelationshipRequestsModalComponent } from '../../shared/modals/relationship-requests-modal/relationship-requests-modal.component';
 import { MemberFormComponent } from '../../shared/modals/member-form/member-form.component';
+import { RelationshipNotificationIndicatorComponent } from '../../shared/components/relationship-notification-indicator/relationship-notification-indicator.component';
 
 @Component({
   selector: 'app-members',
@@ -21,6 +22,7 @@ import { MemberFormComponent } from '../../shared/modals/member-form/member-form
     RelationshipRequestsModalComponent,
     VerificationModalComponent,
     MemberFormComponent,
+    RelationshipNotificationIndicatorComponent,
     FamilyRelationshipComponent
   ],
   templateUrl: './members.component.html',
@@ -55,7 +57,9 @@ export class MembersComponent implements OnInit {
   loading: boolean = true;
   error: string = '';
   currentUser: any = null;
+  currentMember: any; 
   isFormModalVisible = false;
+  showRelationshipModal = false;
   formMode: 'add' | 'edit' = 'add';
   formMember: Member | null = null;
   isAddModalOpen = false;
@@ -66,7 +70,6 @@ export class MembersComponent implements OnInit {
   memberToDelete: Member | null = null;
   selectedMember: Member | null = null;
   memberToVerify: string | null = null;
-  showRelationshipModal = false;
   selectedMemberForMarriageConfirmation: any = null;
   paginatedMembers: any[] = [];
   currentPaginationState: PaginationState;
@@ -773,5 +776,21 @@ export class MembersComponent implements OnInit {
         !m.deceased
       );
     }
+  }
+
+  handleRelationshipRequest(event: {type: string, request: any}): void {
+    console.log('Relationship request action:', event);
+    // Show the modal with the current member ID
+    this.showRelationshipModal = true;
+  }
+
+  closeRelationshipModal(): void {
+    this.showRelationshipModal = false;
+  }
+
+  handleRelationshipActionCompleted(event: any): void {
+    console.log('Relationship action completed:', event);
+    // You can update UI or show notifications based on the action
+    // e.g., marriage_confirmed, marriage_rejected, divorce_confirmed, divorce_rejected
   }
 }
