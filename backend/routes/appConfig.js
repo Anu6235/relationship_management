@@ -19,7 +19,6 @@ const upload = multer({ storage: storage });
 router.post('/', upload.single('logo'), async (req, res) => {
   try {
     const { appName, email, contact } = req.body;
-    // Updated path to match your structure
     const logoPath = req.file ? `/images/app-logos/${req.file.filename}` : null;
 
     let appConfig = await AppConfig.findOne();
@@ -57,23 +56,5 @@ router.get('/', async (req, res) => {
     res.status(500).json({ success: false, error: 'Error retrieving configuration' });
   }
 });
-
-// router.delete('/:id', async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const appConfig = await AppConfig.findByPk(id);
-
-//     if (!appConfig) {
-//       return res.status(404).json({ success: false, error: 'Configuration not found' });
-//     }
-
-//     await appConfig.destroy();
-//     res.json({ success: true, message: 'Configuration deleted successfully' });
-//   } catch (error) {
-//     console.error('Error deleting configuration:', error);
-//     res.status(500).json({ success: false, error: 'Error deleting configuration' });
-//   }
-// });
 
 module.exports = router;

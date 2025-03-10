@@ -399,20 +399,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
         intervalMs = durationValue * 60 * 60 * 1000;
         break;
       case 'day':
-        // For longer intervals, we still check more frequently
-        // but only create when enough time has passed
         intervalMs = Math.min(durationValue * 24 * 60 * 60 * 1000, 3600000); // Max 1 hour
         break;
       case 'month':
-        // For longer intervals, we still check more frequently
         intervalMs = 3600000; // 1 hour
         break;
     }
     
-    // For testing, you might want to use a shorter interval
-    const checkIntervalMs = Math.min(intervalMs, 60000); // Check at least every minute
+    const checkIntervalMs = Math.min(intervalMs, 60000); 
     
-    // Create the subscription
+    // Create the subscriptionuse
     this.ledgerCreationSubscription = interval(checkIntervalMs).subscribe(() => {
       if (this.ledgerForm.get('isActive')?.value) {
         this.generateLedgers(ledgerTypeId);
@@ -451,8 +447,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
     this.addCondition();
 
-    // Implementation for adding a new ledger type would go here
-    // this.toastr.info('New ledger type form prepared. Fill in details and save.', 'Info');
   }
 
   openNewLedgerModal(): void {

@@ -34,7 +34,6 @@ export class EditLedgerModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Initialize form with ledger type data to edit
     if (this.ledgerTypeToEdit) {
       this.patchFormWithLedgerTypeData(this.ledgerTypeToEdit);
     }
@@ -75,12 +74,10 @@ export class EditLedgerModalComponent implements OnInit {
       is_active: ledgerType.is_active
     });
 
-    // Clear existing conditions
     while (this.conditions.length > 0) {
       this.conditions.removeAt(0);
     }
 
-    // Add conditions from config
     if (ledgerType.condition_config) {
       Object.entries(ledgerType.condition_config).forEach(([field, value]) => {
         this.conditions.push(
@@ -92,7 +89,6 @@ export class EditLedgerModalComponent implements OnInit {
       });
     }
 
-    // If no conditions were added, create an empty one
     if (this.conditions.length === 0) {
       this.addCondition();
     }
@@ -119,7 +115,6 @@ export class EditLedgerModalComponent implements OnInit {
     if (this.ledgerTypeForm.valid) {
       this.isSubmitting = true;
       
-      // Convert form values to match LedgerType interface
       const conditionConfig: any = {};
       this.conditions.controls.forEach(control => {
         const field = control.get('field')?.value;

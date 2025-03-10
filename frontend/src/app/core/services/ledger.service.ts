@@ -68,7 +68,6 @@ getEligibleMembers(id: number): Observable<EligibleMembersResponse> {
   return this.http.get<EligibleMembersResponse>(`${this.baseUrl}/ledger-types/${id}/eligible-members`);
 }
 
-// Ledger Methods
 getAllLedgers(): Observable<LedgerResponse> {
   return this.http.get<LedgerResponse>(`${this.baseUrl}/ledgers`);
 }
@@ -93,7 +92,6 @@ generateLedgers(ledgerTypeId: number): Observable<any> {
   return this.http.post<any>(`${this.baseUrl}/ledgers/generate/${ledgerTypeId}`, {});
 }
 
-// New methods based on the routes
 recalculateFines(): Observable<any> {
   return this.http.post<any>(`${this.baseUrl}/ledgers/recalculate-fines`, {});
 }

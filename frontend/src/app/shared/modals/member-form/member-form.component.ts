@@ -618,8 +618,6 @@ export class MemberFormComponent implements OnInit {
       error: (error) => {
         console.error('Error creating marriage relationship:', error);
         
-        // Even if marriage update fails, member update was successful
-        // Just notify the user and continue
         this.errorMessage = 'Member information updated, but marriage details could not be modified.';
         this.memberSaved.emit(this.member);
         this.resetForm();
@@ -628,8 +626,6 @@ export class MemberFormComponent implements OnInit {
     });
   }
   
-
-  // New method for creating divorce for a new marriage
   createDivorceForNewMarriage(husbandId: number, wifeId: number, marriageDate: string, divorceDate: string, requestedBy: number): void {
     const divorceData = {
       husband_id: husbandId,
@@ -652,7 +648,6 @@ export class MemberFormComponent implements OnInit {
     });
   }
 
-  // New method for creating divorce for an existing marriage
   createDivorceForExistingMarriage(marriageId: number, divorceDate: string, requestedBy: number): void {
     const divorceData = {
       marriage_id: marriageId,
@@ -811,17 +806,14 @@ export class MemberFormComponent implements OnInit {
   }
   
   onSpouseInputBlur(): void {
-    // Small delay to allow the click to register on dropdown items
     setTimeout(() => {
       this.showDropdown = false;
       
-      // If nothing selected and text doesn't match a spouse, reset the value
       if (this.spouseSearchControl.value !== this.selectedSpouseName) {
         this.memberForm.patchValue({
           spouse_id: null
         });
         
-        // If the user typed something but didn't select, keep their search text
         if (!this.spouseSearchControl.value) {
           this.selectedSpouseName = '';
         }

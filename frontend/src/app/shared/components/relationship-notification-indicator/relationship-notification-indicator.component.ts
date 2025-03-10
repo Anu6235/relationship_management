@@ -82,7 +82,7 @@ export class RelationshipNotificationIndicatorComponent implements OnInit {
                   this.hasPendingDivorceRequest = true;
                 }
                 
-                // Store the first pending request for reference (if any)
+                // Store the first pending request for reference 
                 if (marriagePending) {
                   this.pendingRequest = response.data.find((req: MarriageRequest) => req.status === 'pending') || null;
                 } else if (divorcePending) {
@@ -152,12 +152,11 @@ export class RelationshipNotificationIndicatorComponent implements OnInit {
       // Check if we already created an initials div for this element
       const existingInitials = parentElement.querySelector('div');
       if (existingInitials) {
-        // If it exists but is hidden, show it
         existingInitials.style.display = 'flex';
         return;
       }
       
-      // Otherwise create a new initials div
+      // Else create a new initials div
       const initialsDiv = document.createElement('div');
       initialsDiv.className = 'avatar-initials';
       const initials = `${member.first_name.charAt(0)}${member.last_name.charAt(0)}`;

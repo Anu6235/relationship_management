@@ -1,9 +1,6 @@
-<!-- This component doesn't replace the image but adds a notification dot overlay -->
 <div class="notification-wrapper" (click)="handleRequest()">
-  <!-- The content will be the image from parent component -->
   <ng-content></ng-content>
 
-  <!-- Notification dot positioned absolutely over the image -->
   <div
     *ngIf="
       hasPendingMarriageRequest ||

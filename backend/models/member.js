@@ -120,7 +120,6 @@ module.exports = (sequelize, DataTypes) => {
     return `/images/member-avatars/${this.gender.toLowerCase()}-avatar.png`;
   };
 
-  // Helper methods for parent_id management
   Member.prototype.getParentIds = function() {
     return this.parent_id ? this.parent_id.split(',').map(id => Number(id)) : [];
   };

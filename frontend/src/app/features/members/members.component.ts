@@ -734,9 +734,9 @@ export class MembersComponent implements OnInit {
     this.memberService.getRelationships(memberId)
       .pipe(finalize(() => this.loading = false))
       .subscribe({
-        next: (response: RelationshipResponse) => {  // Ensure correct response type
+        next: (response: RelationshipResponse) => { 
           if (response.success && response.data) {
-            this.relationshipData = response.data;  // Directly assign the correct structure
+            this.relationshipData = response.data;  
             this.error = '';
           }
         },
@@ -757,8 +757,6 @@ export class MembersComponent implements OnInit {
   
   // Load potential spouses for the current member
   private loadPotentialSpouses() {
-    // This method would need to be implemented if the API supports it
-    // For now, we'll use a placeholder implementation
     const memberId = this.memberForm.get('id')?.value;
     if (memberId) {
       // Filter members to find potential spouses (opposite gender, not married)
@@ -786,7 +784,5 @@ export class MembersComponent implements OnInit {
 
   handleRelationshipActionCompleted(event: any): void {
     console.log('Relationship action completed:', event);
-    // You can update UI or show notifications based on the action
-    // e.g., marriage_confirmed, marriage_rejected, divorce_confirmed, divorce_rejected
   }
 }

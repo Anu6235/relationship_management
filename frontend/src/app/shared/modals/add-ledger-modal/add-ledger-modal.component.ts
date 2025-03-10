@@ -74,18 +74,15 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
   patchFormWithLedgerTypeData(ledgerType: LedgerType) {
     if (!ledgerType) return;
 
-    // Logging for debugging
     console.log('Original ledger type:', ledgerType);
     console.log('Original start_date:', ledgerType.start_date);
 
-    // Reset the form to ensure clean state
     this.ledgerTypeForm.reset();
 
     // Prepare start date
     let startDate: string | null = null;
     if (ledgerType.start_date) {
       try {
-        // Convert to Date and then to YYYY-MM-DD format
         const dateObj = new Date(ledgerType.start_date);
         startDate = this.formatDateForInput(dateObj);
       } catch (error) {
@@ -94,34 +91,29 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
       }
     }
 
-    // Patch values with explicit handling
     this.ledgerTypeForm.patchValue({
       name: ledgerType.name || '',
       description: ledgerType.description || '',
       amount: ledgerType.amount || 0,
-      start_date: startDate, // Use formatted date string
+      start_date: startDate, 
       duration_value: ledgerType.duration_value || 30,
       duration_unit: ledgerType.duration_unit || 'day',
       fine_amount: ledgerType.fine_amount || 0,
       fine_interval_value: ledgerType.fine_interval_value || 10,
       fine_interval_unit: ledgerType.fine_interval_unit || 'day',
       is_active: ledgerType.is_active !== undefined ? ledgerType.is_active : true
-    }, { emitEvent: true }); // Ensure change detection
+    }, { emitEvent: true }); 
 
-    // Clear and rebuild conditions
     this.rebuildConditions(ledgerType);
 
-    // Log the patched form value for verification
     console.log('Patched form values:', this.ledgerTypeForm.value);
   }
 
   rebuildConditions(ledgerType: LedgerType) {
-    // Clear existing conditions
     while (this.conditions.length !== 0) {
       this.conditions.removeAt(0);
     }
 
-    // Rebuild conditions
     if (ledgerType.condition_config && Object.keys(ledgerType.condition_config).length) {
       Object.entries(ledgerType.condition_config).forEach(([field, value]) => {
         this.conditions.push(
@@ -132,7 +124,6 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
         );
       });
     } else {
-      // Add a default condition if none exist
       this.addCondition();
     }
   }
@@ -178,7 +169,6 @@ onSubmit() {
 
     const formValue = this.ledgerTypeForm.value;
 
-    // Explicitly construct the payload with type safety
     const formData: Partial<LedgerType> = {
       name: formValue.name,
       description: formValue.description,
@@ -201,7 +191,6 @@ onSubmit() {
         .subscribe({
           next: (response) => {
             console.log('Update response:', response);
-            // Ensure the response shows the updated start date
             console.log('Updated start date:', response.data.start_date);
             this.save.emit(response);
             this.isSubmitting = false;

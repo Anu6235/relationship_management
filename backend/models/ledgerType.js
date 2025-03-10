@@ -57,7 +57,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {});
   
-  // Instance method to calculate duration in hours
+  // Calculate duration in hours
   LedgerType.prototype.getDurationInHours = function() {
     const value = this.duration_value;
     switch(this.duration_unit) {
@@ -74,7 +74,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   
-  // Instance method to get due date based on invoice date
+  // Get due date based on invoice date
   LedgerType.prototype.calculateDueDate = function(invoiceDate) {
     const date = new Date(invoiceDate);
     switch(this.duration_unit) {
@@ -129,7 +129,7 @@ module.exports = (sequelize, DataTypes) => {
     return intervals * parseFloat(this.fine_amount);
   };
   
-  // Method to check if a member satisfies the conditions
+  // Check if a member satisfies the conditions
   LedgerType.prototype.isApplicableToMember = function(member) {
     if (!this.condition_config || Object.keys(this.condition_config).length === 0) {
       return true; // No conditions means applicable to all members

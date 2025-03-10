@@ -10,7 +10,63 @@ async function generateLedgersForType(ledgerType) {
       return;
     }
     
-    // ... (previous code remains the same)
+   // Check if a ledger has been created recently for this type
+   const lastLedger = await Ledger.findOne({
+    where: { ledger_type_id: ledgerType.id },
+    order: [['invoice_created_at', 'DESC']]
+  });
+  
+  if (lastLedger) {
+    const now = new Date();
+    const lastCreationTime = new Date(lastLedger.invoice_created_at);
+    
+    // Calculate duration in milliseconds
+    let durationMs = 0;
+    switch (ledgerType.duration_unit) {
+      case 'minute':
+        durationMs = ledgerType.duration_value * 60 * 1000;
+        break;
+      case 'hour':
+        durationMs = ledgerType.duration_value * 60 * 60 * 1000;
+        break;
+      case 'day':
+        durationMs = ledgerType.duration_value * 24 * 60 * 60 * 1000;
+        break;
+      case 'month':
+        // Approximate a month as 30 days
+        durationMs = ledgerType.duration_value * 30 * 24 * 60 * 60 * 1000;
+        break;
+    }
+    
+    const elapsedMs = now.getTime() - lastCreationTime.getTime();
+    if (elapsedMs < durationMs) {
+      console.log(`Skipping ledger generation for ${ledgerType.name} - Not enough time has passed`);
+      return;
+    }
+  }
+  
+  // Build conditions from condition_config
+  const conditions = ledgerType.condition_config || {};
+  const whereClause = {};
+  
+  // Map the conditions from the config to the database fields
+  Object.keys(conditions).forEach(key => {
+    // Handle special case for 'deceased'
+    if (key === 'deceased') {
+      const boolValue = conditions[key].toLowerCase() === 'no' ? false : true;
+      whereClause[key] = boolValue;
+    } else {
+      whereClause[key] = conditions[key];
+    }
+  });
+  
+  // Find members that match the conditions
+  const members = await Member.findAll({ where: whereClause });
+  
+  if (members.length === 0) {
+    console.log(`No eligible members found for ledger type: ${ledgerType.name}`);
+    return;
+  }
     
     // Generate ledgers for each eligible member using a for loop
     const now = new Date();

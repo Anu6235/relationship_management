@@ -70,7 +70,6 @@ export class FamilyRelationshipComponent implements OnInit {
       .subscribe({
         next: (response: RelationshipResponse) => {
           if (response.success && response.data) {
-            // Service now handles image URL processing, so we can directly use the data
             this.relationshipData = {
               member: response.data.member,
               spouse: response.data.relationships.spouse,
@@ -127,12 +126,11 @@ export class FamilyRelationshipComponent implements OnInit {
     // Check if we already created an initials div for this element
     const existingInitials = parentElement.querySelector('div');
     if (existingInitials) {
-      // If it exists but is hidden, show it
       existingInitials.style.display = 'flex';
       return;
     }
     
-    // Otherwise create a new initials div
+    // Else create a new initials div
     const initialsDiv = document.createElement('div');
     initialsDiv.className = 'avatar-initials';
     const initials = `${member.first_name.charAt(0)}${member.last_name.charAt(0)}`;
