@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { MemberService } from '../../../core/services/member.service';
 import { CommonModule } from '@angular/common';
+import { Member } from '../../../core/models/member';
+import { Router } from '@angular/router';
 
 interface RelationshipRequest {
   id: number;
@@ -32,8 +34,14 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
   marriageRequests: RelationshipRequest[] = [];
   divorceRequests: RelationshipRequest[] = [];
   error: string | null = null;
+  baseUrl = '';
 
-  constructor(private memberService: MemberService) {}
+  constructor(
+    private memberService: MemberService,
+    private router: Router
+  ) {
+    this.baseUrl = 'http://localhost:5000';
+  }
 
   ngOnInit(): void {
     // console.log(this.memberId,'this.memberId')
@@ -127,7 +135,7 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
     if (pendingRequests.length === 0) {
       return;
     }
-
+  
     let completedRequests = 0;
     
     console.log(pendingRequests,'pendingRequests')
@@ -147,24 +155,30 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
       
       // Fetch partner info
       this.memberService.getMember(partnerId)
-        .subscribe({
-          next: (response) => {
-            completedRequests++;
+      .subscribe({
+        next: (response) => {
+          completedRequests++;
+          
+          if (response.data) {
+            console.log('Found partner info for marriage request:', request.id);
             
-            if (response.data) {
-              console.log('Found partner info for marriage request:', request.id);
-              
-              this.marriageRequests.push({
-                id: request.id,
-                requestType: 'marriage',
-                partner: response.data,
-                isProposer: isProposer,
-                message: isProposer ? 
-                  `You have sent a marriage request to ${response.data.first_name} ${response.data.last_name}.` :
-                  `${response.data.first_name} ${response.data.last_name} has requested to marry you.`,
-                timestamp: request.created_at
-              });
-              
+            // Process partner data and ensure profile_image_url is set
+            const partner = response.data;
+            // Check if profile_image exists but profile_image_url doesn't
+            if (partner.profile_image && !partner.profile_image_url) {
+              partner.profile_image_url = this.getImageUrl(partner.profile_image);
+            }
+            
+            this.marriageRequests.push({
+              id: request.id,
+              requestType: 'marriage',
+              partner: partner,
+              isProposer: isProposer,
+              message: isProposer ? 
+                `You have sent a marriage request to ${partner.first_name} ${partner.last_name}.` :
+                `${partner.first_name} ${partner.last_name} has requested to marry you.`,
+              timestamp: request.created_at
+            });
               // Sort requests
               this.marriageRequests.sort((a, b) => {
                 if (a.timestamp && b.timestamp) {
@@ -213,14 +227,20 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
         .subscribe({
           next: (response) => {
             if (response.data) {
+              // Process the partner's profile image URL
+              const partner = response.data;
+              if (partner.profile_image) {
+                partner.profile_image_url = this.getImageUrl(partner.profile_image);
+              }
+              
               this.divorceRequests.push({
                 id: request.id,
                 requestType: 'divorce',
-                partner: response.data,
+                partner: partner,
                 isProposer: isInitiator,
                 message: isInitiator ? 
-                  `You have requested a divorce from ${response.data.first_name} ${response.data.last_name}.` :
-                  `${response.data.first_name} ${response.data.last_name} has requested a divorce from you.`,
+                  `You have requested a divorce from ${partner.first_name} ${partner.last_name}.` :
+                  `${partner.first_name} ${partner.last_name} has requested a divorce from you.`,
                 timestamp: request.created_at
               });
               
@@ -416,6 +436,40 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
         }
       });
   }
+
+   getImageUrl(imagePath: string | null): string {
+      if (!imagePath) return '';
+      
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+      }
+      
+      return `${this.baseUrl}${imagePath}`;
+    }
+  
+    handleImageError(event: any, member: Member) {
+      const imgElement = event.target;
+      imgElement.style.display = 'none';
+      
+      const parentElement = imgElement.parentElement;
+      if (!parentElement) return;
+      
+      // Check if we already created an initials div for this element
+      const existingInitials = parentElement.querySelector('div');
+      if (existingInitials) {
+        // If it exists but is hidden, show it
+        existingInitials.style.display = 'flex';
+        return;
+      }
+      
+      // Otherwise create a new initials div
+      const initialsDiv = document.createElement('div');
+      initialsDiv.className = 'avatar-initials';
+      const initials = `${member.first_name.charAt(0)}${member.last_name.charAt(0)}`;
+      initialsDiv.textContent = initials;
+      
+      parentElement.appendChild(initialsDiv);
+    }
 
   onCancel(): void {
     this.modalClosed.emit();

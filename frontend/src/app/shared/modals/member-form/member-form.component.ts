@@ -1,14 +1,15 @@
-import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnInit, EventEmitter, Output, Input, ChangeDetectorRef } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MemberService } from '../../../core/services/member.service';
 import { CommonModule } from '@angular/common';
 import { Member, MarriageData } from '../../../core/models/member';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-member-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './member-form.component.html',
   styleUrls: ['./member-form.component.css']
 })
@@ -63,7 +64,12 @@ export class MemberFormComponent implements OnInit {
   showDivorceDatePicker: boolean = false;
   errorMessage: string = '';
   formSubmitting: boolean = false;
-  currentUserId: number = 1; // This should be retrieved from your auth service
+  spouseSearchControl = new FormControl('');
+  showDropdown = false;
+  spouseSearchText = '';
+  selectedSpouseName = '';
+  private subscriptions: Subscription[] = [];
+
 
   genderOptions = [
     { value: 'male', label: 'Male' },
@@ -85,6 +91,7 @@ export class MemberFormComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private memberService: MemberService,
+    private cdr: ChangeDetectorRef 
   ) {
     this.memberForm = this.fb.group({
       first_name: ['', Validators.required],
@@ -107,6 +114,18 @@ export class MemberFormComponent implements OnInit {
       deceased_spouse_id: [null],
       updated_at: [new Date()]
     });
+
+    // Subscribe to spouse_id changes to update the search field
+    const spouseIdSubscription = this.memberForm.get('spouse_id')?.valueChanges.subscribe(value => {
+      if (!value) {
+        this.spouseSearchControl.setValue('');
+        this.selectedSpouseName = '';
+      }
+    });
+    
+    if (spouseIdSubscription) {
+      this.subscriptions.push(spouseIdSubscription);
+    }
 
     // Watch for changes in marital status
     this.memberForm.get('marital_status')?.valueChanges.subscribe(value => {
@@ -168,19 +187,13 @@ export class MemberFormComponent implements OnInit {
     setTimeout(() => {
       this.patchFormValues();
     }, 1000);
-    
-    // If you need to load any initial data from user service
-    // this.currentUserId = this.authService.getCurrentUser().id;
   }
-  // ngonChanges() : void{
-  //   console.log(this.mode,'mode')
-  //   this.memberService.getWifeDetailsByHusbandId(
-  //     this.member?.id
-  //   ).subscribe((res:any)=>{
-  //     console.log(res,'res')
-  //   })
-    
-  // }
+
+
+  ngOnDestroy(): void {
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
 
   async patchFormValues(): Promise<void> {
     console.log(this.wife,'this.wife')
@@ -214,6 +227,25 @@ export class MemberFormComponent implements OnInit {
       console.log(formValues,'formValues')
       
       this.memberForm.patchValue(formValues);
+    }
+    if (this.wife) {
+      this.memberService.getMember(this.wife).subscribe({
+        next: (response) => {
+          if (response.data) {
+            const spouse = response.data;
+            this.selectedSpouseName = `${spouse.first_name} ${spouse.last_name} (${spouse.mobile_number || ''})`;
+            
+            if (this.member?.marital_status?.toLowerCase() === 'widowed') {
+              this.selectedSpouseName += ' (deceased)';
+            }
+            
+            this.spouseSearchControl.setValue(this.selectedSpouseName);
+          }
+        },
+        error: (error) => {
+          console.error('Error loading spouse details:', error);
+        }
+      });
     }
   }
 
@@ -458,7 +490,6 @@ export class MemberFormComponent implements OnInit {
             const husbandId = gender === 'male' ? this.member!.id : spouseId;
             const wifeId = gender === 'female' ? this.member!.id : spouseId;
   
-            // Important: Use the member's ID as requested_by instead of currentUserId
             this.createMarriage(husbandId, wifeId, marriageDate, this.member!.id);
           } else if (maritalStatus === 'divorced' && spouseId) {
             // If changed to divorced or spouse changed while still divorced
@@ -550,6 +581,8 @@ export class MemberFormComponent implements OnInit {
         this.handleErrorResponse(error);
       }
     });
+
+    this.cdr.detectChanges();
   }
 
   private handleErrorResponse(error: any): void {
@@ -569,7 +602,6 @@ export class MemberFormComponent implements OnInit {
     }
   }
 
-  // Updated method for marriage creation
   createMarriage(husbandId: number, wifeId: number, marriageDate: string, requestedBy: number): void {
     const marriageData: MarriageData = {
       husband_id: husbandId,
@@ -585,13 +617,17 @@ export class MemberFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error creating marriage relationship:', error);
+        
+        // Even if marriage update fails, member update was successful
+        // Just notify the user and continue
+        this.errorMessage = 'Member information updated, but marriage details could not be modified.';
+        this.memberSaved.emit(this.member);
+        this.resetForm();
         this.formSubmitting = false;
-        this.errorMessage = 'Failed to create marriage relationship. The member was ' + 
-          (this.mode === 'add' ? 'added' : 'updated') + 
-          ' but marriage information could not be saved.';
       }
     });
   }
+  
 
   // New method for creating divorce for a new marriage
   createDivorceForNewMarriage(husbandId: number, wifeId: number, marriageDate: string, divorceDate: string, requestedBy: number): void {
@@ -653,6 +689,9 @@ export class MemberFormComponent implements OnInit {
     this.showMarriageDatePicker = false;
     this.showDivorceDatePicker = false;
     this.isVisible = false;
+    this.spouseSearchControl.setValue('');
+    this.selectedSpouseName = '';
+    this.showDropdown = false;
   }
 
   onCancel(): void {
@@ -750,5 +789,70 @@ export class MemberFormComponent implements OnInit {
         }
       });
     }
+  }
+
+  filterSpouses(): void {
+    this.spouseSearchText = this.spouseSearchControl.value || '';
+    this.showDropdown = true;
+  }
+  
+  selectSpouse(spouse: Member): void {
+    this.memberForm.patchValue({
+      spouse_id: spouse.id
+    });
+    
+    this.selectedSpouseName = `${spouse.first_name} ${spouse.last_name} (${spouse.mobile_number || ''})`;
+    if (this.memberForm.get('marital_status')?.value?.toLowerCase() === 'widowed') {
+      this.selectedSpouseName += ' (deceased)';
+    }
+    
+    this.spouseSearchControl.setValue(this.selectedSpouseName);
+    this.showDropdown = false;
+  }
+  
+  onSpouseInputBlur(): void {
+    // Small delay to allow the click to register on dropdown items
+    setTimeout(() => {
+      this.showDropdown = false;
+      
+      // If nothing selected and text doesn't match a spouse, reset the value
+      if (this.spouseSearchControl.value !== this.selectedSpouseName) {
+        this.memberForm.patchValue({
+          spouse_id: null
+        });
+        
+        // If the user typed something but didn't select, keep their search text
+        if (!this.spouseSearchControl.value) {
+          this.selectedSpouseName = '';
+        }
+      }
+    }, 200);
+  }
+  
+  // Filtered spouses getters
+  get filteredPotentialSpouses(): Member[] {
+    if (!this.spouseSearchText) {
+      return this.potentialSpouses;
+    }
+    
+    const searchLower = this.spouseSearchText.toLowerCase();
+    return this.potentialSpouses.filter(spouse => 
+      spouse.first_name.toLowerCase().includes(searchLower) || 
+      spouse.last_name.toLowerCase().includes(searchLower) || 
+      (spouse.mobile_number && spouse.mobile_number.includes(this.spouseSearchText))
+    );
+  }
+  
+  get filteredDeceasedSpouses(): Member[] {
+    if (!this.spouseSearchText) {
+      return this.deceasedSpouses;
+    }
+    
+    const searchLower = this.spouseSearchText.toLowerCase();
+    return this.deceasedSpouses.filter(spouse => 
+      spouse.first_name.toLowerCase().includes(searchLower) || 
+      spouse.last_name.toLowerCase().includes(searchLower) || 
+      (spouse.mobile_number && spouse.mobile_number.includes(this.spouseSearchText))
+    );
   }
 }

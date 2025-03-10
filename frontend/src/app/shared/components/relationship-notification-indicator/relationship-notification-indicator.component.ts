@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { MemberService } from '../../../core/services/member.service';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { Member } from '../../../core/models/member';
 
 interface MarriageRequest {
   id: number;
@@ -40,9 +42,14 @@ export class RelationshipNotificationIndicatorComponent implements OnInit {
   hasPendingDivorceRequest = false;
   hasPendingBothRequests = false;
   pendingRequest: MarriageRequest | DivorceRequest | null = null;
+  baseUrl = '';
 
-  constructor(private memberService: MemberService) {}
-
+  constructor(
+    private memberService: MemberService,
+    private router: Router
+  ) {
+    this.baseUrl = 'http://localhost:5000';
+  }
   ngOnInit(): void {
     this.checkForPendingRequests();
   }
@@ -124,4 +131,38 @@ export class RelationshipNotificationIndicatorComponent implements OnInit {
     }
     return '';
   }
+
+   getImageUrl(imagePath: string | null): string {
+      if (!imagePath) return '';
+      
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+      }
+      
+      return `${this.baseUrl}${imagePath}`;
+    }
+  
+    handleImageError(event: any, member: Member) {
+      const imgElement = event.target;
+      imgElement.style.display = 'none';
+      
+      const parentElement = imgElement.parentElement;
+      if (!parentElement) return;
+      
+      // Check if we already created an initials div for this element
+      const existingInitials = parentElement.querySelector('div');
+      if (existingInitials) {
+        // If it exists but is hidden, show it
+        existingInitials.style.display = 'flex';
+        return;
+      }
+      
+      // Otherwise create a new initials div
+      const initialsDiv = document.createElement('div');
+      initialsDiv.className = 'avatar-initials';
+      const initials = `${member.first_name.charAt(0)}${member.last_name.charAt(0)}`;
+      initialsDiv.textContent = initials;
+      
+      parentElement.appendChild(initialsDiv);
+    }
 }

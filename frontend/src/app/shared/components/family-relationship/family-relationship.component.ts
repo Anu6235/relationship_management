@@ -36,7 +36,7 @@ export class FamilyRelationshipComponent implements OnInit {
     spouse: Member | null;
     divorced_spouses: Member[];
     widowed_spouses: Member[];
-    pending_spouses: any[]; // Changed to match the updated interface
+    pending_spouses: any[]; 
     children: Member[];
     parents: Member[];
     marriages: any[];
@@ -51,8 +51,6 @@ export class FamilyRelationshipComponent implements OnInit {
     private memberService: MemberService,
     private router: Router
   ) {
-    // Set the base URL for API calls
-    // Replace with your actual API URL from environment config if available
     this.baseUrl = 'http://localhost:5000';
   }
 
@@ -112,12 +110,10 @@ export class FamilyRelationshipComponent implements OnInit {
   getImageUrl(imagePath: string | null): string {
     if (!imagePath) return '';
     
-    // Check if it's already a full URL
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
     
-    // Otherwise, prepend base URL if needed
     return `${this.baseUrl}${imagePath}`;
   }
 

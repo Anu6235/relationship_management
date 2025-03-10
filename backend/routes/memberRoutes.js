@@ -299,23 +299,14 @@ router.put('/:id', upload.single('profile_image'), async (req, res) => {
 
 
 
-// Delete member (with image cleanup)
+// Delete member (with complete relationship cleanup)
 router.delete('/:id', async (req, res) => {
   const t = await sequelize.transaction();
   try {
       const { id } = req.params;
 
-      const member = await Member.findByPk(id, {
-          include: [{
-              model: ParentTable,
-              as: 'husbandMarriages',
-              required: false
-          }, {
-              model: ParentTable,
-              as: 'wifeMarriages',
-              required: false
-          }]
-      });
+      // First find the member without eager loading
+      const member = await Member.findByPk(id);
 
       if (!member) {
           await t.rollback();
@@ -333,21 +324,66 @@ router.delete('/:id', async (req, res) => {
           });
       }
 
-      // First handle the relationships
-      if (member.husbandMarriages && member.husbandMarriages.length > 0) {
-          for (const marriage of member.husbandMarriages) {
-              // Either set to null or destroy depending on your requirements
-              await marriage.update({ husbandId: null }, { transaction: t });
-              // Or if you want to delete them: await marriage.destroy({ transaction: t });
+      // Find marriages where this member is husband or wife
+      const husbandMarriages = await sequelize.models.ParentTable.findAll({
+          where: { husband_id: id },
+          transaction: t
+      });
+      
+      const wifeMarriages = await sequelize.models.ParentTable.findAll({
+          where: { wife_id: id },
+          transaction: t
+      });
+
+      // Handle MemberParentTable junction records
+      await sequelize.models.MemberParentTable.destroy({
+          where: {
+              [Op.or]: [
+                  { child_id: id },
+                  { parent_id: id }
+              ]
+          },
+          transaction: t
+      });
+
+      // Handle husband marriages
+      for (const marriage of husbandMarriages) {
+          if (marriage.wife_id) {
+              const wife = await Member.findByPk(marriage.wife_id);
+              if (wife) {
+                  // Update wife's parent_id to remove this marriage
+                  const wifeParentIds = wife.parent_id ? 
+                      wife.parent_id.split(',').map(Number).filter(pid => pid !== marriage.id) : 
+                      [];
+                  
+                  await wife.update({ 
+                      parent_id: wifeParentIds.length > 0 ? wifeParentIds.join(',') : null,
+                      marital_status: wifeParentIds.length > 0 ? wife.marital_status : 'single'
+                  }, { transaction: t });
+              }
           }
+          // Delete the marriage record
+          await marriage.destroy({ transaction: t });
       }
 
-      if (member.wifeMarriages && member.wifeMarriages.length > 0) {
-          for (const marriage of member.wifeMarriages) {
-              // Either set to null or destroy depending on your requirements
-              await marriage.update({ wifeId: null }, { transaction: t });
-              // Or if you want to delete them: await marriage.destroy({ transaction: t });
+      // Handle wife marriages
+      for (const marriage of wifeMarriages) {
+          if (marriage.husband_id) {
+              const husband = await Member.findByPk(marriage.husband_id);
+              if (husband) {
+                  // Update husband's parent_id to remove this marriage
+                  const husbandParentIds = husband.parent_id ? 
+                      husband.parent_id.split(',').map(Number).filter(pid => pid !== marriage.id) : 
+                      [];
+                  
+                  await husband.update({ 
+                      parent_id: husbandParentIds.length > 0 ? husbandParentIds.join(',') : null,
+                      marital_status: husbandParentIds.length > 0 ? husband.marital_status : 'single'
+                  }, { transaction: t });
+              }
           }
+          // Delete the marriage record
+          await marriage.destroy({ transaction: t });
       }
 
       // Now delete the member

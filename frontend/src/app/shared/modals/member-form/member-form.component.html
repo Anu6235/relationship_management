@@ -203,46 +203,74 @@
             <!-- Spouse Selection (Conditional) -->
             <div class="form-group" *ngIf="showSpouseSelection">
               <label for="spouse_id">Select Spouse</label>
-              <select
-                id="spouse_id"
-                formControlName="spouse_id"
-                (change)="onSpouseSelected()"
+              <div class="relative w-full">
+                <input
+                  type="text"
+                  placeholder="Type to search and select spouse..."
+                  [formControl]="spouseSearchControl"
+                  (input)="filterSpouses()"
+                  (focus)="showDropdown = true"
+                  (blur)="onSpouseInputBlur()"
+                />
+
+                <div
+                  class="absolute left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50"
+                  [class.hidden]="!showDropdown"
+                >
+                  <!-- Non-widowed Status -->
+                  <ng-container
+                    *ngIf="
+                      memberForm.get('marital_status')?.value?.toLowerCase() !==
+                      'widowed'
+                    "
+                  >
+                    <div
+                      *ngFor="let spouse of filteredPotentialSpouses"
+                      class="p-2 hover:bg-gray-100 cursor-pointer"
+                      (mousedown)="selectSpouse(spouse)"
+                    >
+                      {{ spouse.first_name }} {{ spouse.last_name }} ({{
+                        spouse.mobile_number || ""
+                      }})
+                    </div>
+                    <div
+                      *ngIf="filteredPotentialSpouses.length === 0"
+                      class="p-2 text-gray-500"
+                    >
+                      No spouses found
+                    </div>
+                  </ng-container>
+
+                  <!-- Widowed Status -->
+                  <ng-container
+                    *ngIf="
+                      memberForm.get('marital_status')?.value?.toLowerCase() ===
+                      'widowed'
+                    "
+                  >
+                    <div
+                      *ngFor="let spouse of filteredDeceasedSpouses"
+                      class="p-2 hover:bg-gray-100 cursor-pointer"
+                      (mousedown)="selectSpouse(spouse)"
+                    >
+                      {{ spouse.first_name }} {{ spouse.last_name }} ({{
+                        spouse.mobile_number || ""
+                      }}) (deceased)
+                    </div>
+                    <div
+                      *ngIf="filteredDeceasedSpouses.length === 0"
+                      class="p-2 text-gray-500"
+                    >
+                      No deceased spouses found
+                    </div>
+                  </ng-container>
+                </div>
+              </div>
+
+              <div
+                *ngIf="isFieldInvalid('spouse_id')"
+                class="text-red-500 text-sm mt-1"
               >
-                <option value="">Select Spouse</option>
-                <!-- For non-widowed statuses -->
-                <ng-container
-                  *ngIf="
-                    memberForm.get('marital_status')?.value?.toLowerCase() !==
-                    'widowed'
-                  "
-                >
-                  <option
-                    *ngFor="let spouse of potentialSpouses"
-                    [value]="spouse.id"
-                  >
-                    {{ spouse.first_name }} {{ spouse.last_name }} ({{
-                      spouse.mobile_number || ""
-                    }})
-                  </option>
-                </ng-container>
-                <!-- For widowed status -->
-                <ng-container
-                  *ngIf="
-                    memberForm.get('marital_status')?.value?.toLowerCase() ===
-                    'widowed'
-                  "
-                >
-                  <option
-                    *ngFor="let spouse of deceasedSpouses"
-                    [value]="spouse.id"
-                  >
-                    {{ spouse.first_name }} {{ spouse.last_name }} ({{
-                      spouse.mobile_number || ""
-                    }}) (deceased)
-                  </option>
-                </ng-container>
-              </select>
-              <div *ngIf="isFieldInvalid('spouse_id')" class="invalid-feedback">
                 Spouse selection is required
               </div>
             </div>

@@ -29,7 +29,7 @@
         </div>
 
         <!-- No requests message -->
-        <div
+        <!-- <div
           *ngIf="
             !loading &&
             !error &&
@@ -46,7 +46,7 @@
           >
             Close
           </button>
-        </div>
+        </div> -->
 
         <!-- Marriage Requests Section -->
         <div
@@ -66,36 +66,31 @@
             }"
           >
             <div class="flex items-center mb-4">
-              <div
-                class="relative w-16 h-16 rounded-full overflow-hidden border-2 border-blue-500 mr-4"
-              >
+              <div class="avatar-container avatar-medium mr-4">
                 <img
-                  [src]="
-                    request.partner?.profile_image_url ||
-                    'assets/img/default-profile.png'
-                  "
-                  alt="Profile Image"
-                  class="w-full h-full object-cover"
+                  *ngIf="request.partner?.profile_image_url"
+                  [src]="request.partner?.profile_image_url"
+                  class="avatar-image"
+                  (error)="handleImageError($event, request.partner)"
+                  alt="{{ request.partner?.first_name }} {{
+                    request.partner?.last_name
+                  }}"
                 />
+                <div
+                  *ngIf="!request.partner?.profile_image_url"
+                  class="avatar-initials"
+                >
+                  {{ request.partner?.first_name.charAt(0)?.toUpperCase() }}
+                  {{ request.partner?.last_name.charAt(0)?.toUpperCase() }}
+                </div>
               </div>
+
               <div>
                 <p class="font-medium">
                   {{ request.partner?.first_name }}
                   {{ request.partner?.last_name }}
                 </p>
-                <p
-                  class="text-sm"
-                  [ngClass]="{
-                    'text-blue-600 font-semibold': !request.isProposer,
-                    'text-gray-600': request.isProposer
-                  }"
-                >
-                  {{
-                    request.isProposer
-                      ? "Awaiting response"
-                      : "Wants to marry you"
-                  }}
-                </p>
+
                 <p *ngIf="request.timestamp" class="text-xs text-gray-500 mt-1">
                   Requested on {{ request.timestamp | date : "MMM d, y" }}
                 </p>
