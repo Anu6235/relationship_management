@@ -23,10 +23,14 @@ const protect = async (req, res, next) => {
             //verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            //Get admin from token
+            //Get user from token and check if it's admin
             const user = await User.findByPk(decoded.id);
+            
+            console.log('Decoded Token:', decoded);
+            console.log('Fetched User:', user);
+    
 
-            if (!user) {
+            if (!user || user.role !== 'admin') {
                 return res.status(401).json({
                     success: false,
                     message: 'Not authorized to access this route'
@@ -49,15 +53,4 @@ const protect = async (req, res, next) => {
     }
 };
 
-const adminOnly = async (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        return res.status(403).json({
-            success: false,
-            message: 'Access denied. Admin only route.'
-        });
-    }
-};
-
-module.exports = { protect, adminOnly };
+module.exports = { protect };

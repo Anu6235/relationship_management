@@ -5,7 +5,7 @@ const divorceController = require('../controllers/divorceController');
 const relationshipController = require('../controllers/relationshipController');
 const deathController = require('../controllers/deathController');
 const { Member, User } = require('../models');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -48,10 +48,9 @@ const upload = multer({
 // =================== ADMIN MANAGEMENT ===================
 
 router.use(protect);
-router.use(adminOnly);
 
 //Admin verification
-router.put('/:id/verify', protect, adminOnly, async (req, res) => {
+router.put('/:id/verify', protect, async (req, res) => {
     try {
         const memberId = req.params.id;
         const userId = req.user.id;
