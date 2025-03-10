@@ -20,8 +20,8 @@
       <div class="flex items-center mb-4">
         <div class="avatar-container avatar-medium mr-4">
           <img
-            *ngIf="relationshipData.member.profile_image"
-            [src]="getImageUrl(relationshipData.member.profile_image)"
+            *ngIf="relationshipData.member.profile_image_url"
+            [src]="relationshipData.member.profile_image_url"
             class="avatar-image"
             (error)="handleImageError($event, relationshipData.member)"
             alt="{{ relationshipData.member.first_name }} {{
@@ -322,12 +322,7 @@
             </div>
 
             <div *ngIf="!request.is_outgoing">
-              <button>Accept</button>
-              <button
-                class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Reject
-              </button>
+              <span class="text-sm text-gray-600">Awaiting confirmation</span>
             </div>
             <div *ngIf="request.is_outgoing">
               <span class="text-sm text-gray-600">Awaiting response</span>

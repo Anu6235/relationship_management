@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { Member } from '../../core/models/member';
+import { Member, RelationshipResponse } from '../../core/models/member';
 import { MemberService } from '../../core/services/member.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DeleteMemberModalComponent } from '../../shared/modals/delete-member-modal/delete-member-modal.component';
@@ -36,12 +36,6 @@ export class MembersComponent implements OnInit {
   //View state management
   viewMode: 'list' | 'relationships' = 'list';
   selectedMemberForRelationships: Member | null = null;
-  relationshipData: {
-    member: Member;
-    spouse: Member | null;
-    children: Member[];
-    parents: Member[];
-  } | null = null;
 
   memberForm: FormGroup;
   potentialSpouses: Member[] = [];
@@ -74,6 +68,7 @@ export class MembersComponent implements OnInit {
   paginatedMembers: any[] = [];
   currentPaginationState: PaginationState;
   showRelationships = false;
+  relationshipData: RelationshipResponse['data'] | null = null;
   selectedMemberId: any ;
   pendingMarriageNotifications: any[] = [];
   private paginationSubscription: Subscription = new Subscription();
@@ -739,9 +734,9 @@ export class MembersComponent implements OnInit {
     this.memberService.getRelationships(memberId)
       .pipe(finalize(() => this.loading = false))
       .subscribe({
-        next: (response) => {
-          if (response.data) {
-            this.relationshipData = response.data;
+        next: (response: RelationshipResponse) => {  // Ensure correct response type
+          if (response.success && response.data) {
+            this.relationshipData = response.data;  // Directly assign the correct structure
             this.error = '';
           }
         },
@@ -751,6 +746,7 @@ export class MembersComponent implements OnInit {
         }
       });
   }
+  
     
   // Navigate back to the members list view
   backToMembersList(): void {

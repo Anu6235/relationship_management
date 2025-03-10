@@ -109,24 +109,16 @@ export class FamilyRelationshipComponent implements OnInit {
     }
   }
 
-  confirmMarriage(marriageId: number, respondingMemberId: number): void {
-    this.memberService.confirmMarriage(marriageId, respondingMemberId)
-      .subscribe(
-        response => {
-          // Handle success
-          console.log('Marriage confirmed successfully', response);
-        },
-        error => {
-          // Handle error
-          console.error('Error confirming marriage', error);
-        }
-      );
-  }
-
-  // Since the service now handles image URLs, this is simplified
   getImageUrl(imagePath: string | null): string {
-    // Image paths should already be processed by the service
-    return imagePath || '';
+    if (!imagePath) return '';
+    
+    // Check if it's already a full URL
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // Otherwise, prepend base URL if needed
+    return `${this.baseUrl}${imagePath}`;
   }
 
   handleImageError(event: any, member: Member) {
