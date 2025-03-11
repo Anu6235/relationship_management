@@ -15,7 +15,7 @@ import {
   providedIn: 'root'
 })
 export class LedgerService {
-  private readonly baseUrl = 'http://localhost:5000/api';
+  private readonly baseUrl = 'relationship-management.onrender.com/api';
 
   constructor(private http: HttpClient) { }
 
