@@ -7,13 +7,12 @@
         </div>
         <span class="app-name">{{ appName }}</span>
       </a>
-      <button
-        class="close-btn d-xl-none d-block"
-        (click)="toggleSidebar()"
-        aria-label="Toggle Sidebar"
+      <div
+        class="close-btn d-xl-none d-block sidebartoggler cursor-pointer"
+        id="sidebarCollapse"
       >
-        <i class="ti ti-x"></i>
-      </button>
+        <i class="ti ti-x fs-8"></i>
+      </div>
     </div>
 
     <nav class="sidebar-nav scroll-sidebar" data-simplebar="">

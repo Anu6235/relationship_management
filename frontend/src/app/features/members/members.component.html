@@ -79,11 +79,11 @@
                 (click)="viewRelationships(member)"
                 class="cursor-pointer text-blue-600 hover:underline"
               >
-                {{ toSentenceCase(member.first_name) }}
+                {{ toTitleCase(member.first_name) }}
               </a>
             </td>
             <td class="px-4 py-3 text-sm font-semibold">
-              {{ toSentenceCase(member.last_name) }}
+              {{ toTitleCase(member.last_name) }}
             </td>
             <td class="px-4 py-3 text-sm">
               {{ formatDate(member.dob) }}

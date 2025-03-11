@@ -23,7 +23,7 @@ import { AddLedgerModalComponent } from '../../shared/modals/add-ledger-modal/ad
 export class SettingsComponent implements OnInit, OnDestroy {
   configForm: FormGroup;
   ledgerForm: FormGroup;
-
+  fileName: string | null = null;
   selectedFile: File | null = null;
   previewUrl: string | null = null;
   isSubmitting = false;
@@ -101,6 +101,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
           });
           if (response.data.logo) {
             this.previewUrl = `http://localhost:5000${response.data.logo}`;
+            this.fileName = response.data.logo.split('/').pop() || 'Uploaded logo';
           }
         }
       },
@@ -114,6 +115,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
       this.selectedFile = file;
+      this.fileName = file.name; 
       const reader = new FileReader();
       reader.onload = () => {
         this.previewUrl = reader.result as string;
@@ -138,6 +140,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
         next: (response) => {
           if (response.success) {
             // this.toastr.success('Configuration saved successfully!', 'Success');
+            if (this.selectedFile) {
+              this.fileName = this.selectedFile.name;
+            }
           } else {
             // this.toastr.error('Failed to save configuration', 'Error');
           }

@@ -382,6 +382,10 @@ export class MembersComponent implements OnInit {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   }
   
+  toTitleCase(str: string): string {
+    return str.replace(/\b\w/g, c => c.toUpperCase());
+  }
+  
   getVerifierName(member: Member): string {
     if (!member.verifier) {
       console.log('No verifier data for member:', member.id);

@@ -22,12 +22,14 @@
 
             <div class="mb-4">
               <label class="block mb-2">Logo</label>
-              <input
-                type="file"
-                (change)="onFileSelect($event)"
-                class="w-full p-2 border rounded"
-                accept="image/*"
-              />
+              <div class="flex flex-col">
+                <input
+                  type="file"
+                  (change)="onFileSelect($event)"
+                  class="w-full p-2 border rounded"
+                  accept="image/*"
+                />
+              </div>
               <img
                 *ngIf="previewUrl"
                 [src]="previewUrl"
