@@ -1,9 +1,10 @@
 {
+ 
   "development": {
-    "username": "root",
-    "password": "333666999",
-    "database": "member_db",
-    "host": "127.0.0.1",
+    "username": "pos_user",
+   "password": "AppW1thP@ssw0rd",
+    "database": "member_management",
+    "host": "128.199.25.90",
     "dialect": "mysql"
   },
   "test": {

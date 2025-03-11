@@ -4,16 +4,16 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await Promise.all([
-      queryInterface.renameColumn('Members', 'firstName', 'first_name'),
-      queryInterface.renameColumn('Members', 'lastName', 'last_name'),
+      queryInterface.renameColumn('members', 'firstName', 'first_name'),
+      queryInterface.renameColumn('members', 'lastName', 'last_name'),
 
-      queryInterface.addColumn('Members', 'status', {
+      queryInterface.addColumn('members', 'status', {
         type: Sequelize.ENUM('active', 'inactive', 'suspended'),
         allowNull: false,
         defaultValue: 'active'
       }),
 
-      queryInterface.addColumn('Members', 'last_login', {
+      queryInterface.addColumn('members', 'last_login', {
         type: Sequelize.DATE,
         allowNull: true,
       })
@@ -22,11 +22,11 @@ module.exports = {
 
   async down (queryInterface, Sequelize) {
     await Promise.all([
-      queryInterface.renameColumn('Members', 'last_name', 'lastName'),
-      queryInterface.renameColumn('Members', 'first_name', 'firstName'),
+      queryInterface.renameColumn('members', 'last_name', 'lastName'),
+      queryInterface.renameColumn('members', 'first_name', 'firstName'),
 
-      queryInterface.removeColumn('Members', 'status'),
-      queryInterface.removeColumn('Members', 'last_login')
+      queryInterface.removeColumn('members', 'status'),
+      queryInterface.removeColumn('members', 'last_login')
     ]);
   }
 };
