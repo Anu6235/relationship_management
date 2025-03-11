@@ -16,7 +16,7 @@ import {
   providedIn: 'root',
 })
 export class MemberService {
-  private readonly API_URL = 'relationship-management.onrender.com/api/members';
+  private readonly API_URL = '/api/members';
   private readonly BASE_URL = 'relationship-management.onrender.com';
   private http = inject(HttpClient);
 

@@ -7,7 +7,7 @@ import { AppConfig } from '../models/app-config';
   providedIn: 'root'
 })
 export class AppConfigService {
-  private apiUrl = 'relationship-management.onrender.com/api/app-config';
+  private apiUrl = ' /api/app-config';
   configUpdated = new EventEmitter<void>();
 
   constructor(private http: HttpClient) { }
