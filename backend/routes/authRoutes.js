@@ -1,10 +1,11 @@
 const express = require('express');
-const { loginAdmin, getAdminProfile } = require('../controllers/authController');
+const { loginAdmin, getAdminProfile, logoutAdmin } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 router.post('/login', loginAdmin);
 router.get('/admin', protect, getAdminProfile);
+router.post('/logout', logoutAdmin); 
 
 module.exports = router;

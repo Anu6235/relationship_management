@@ -82,4 +82,19 @@ const getAdminProfile = async (req, res) => {
     }
 };
 
-module.exports = { loginAdmin, getAdminProfile,};
+const logoutAdmin = async (req, res) => {
+    try {
+        // Invalidate JWT (optional if using token blacklist)
+        res.status(200).json({
+            success: true,
+            message: 'Logged out successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server Error'
+        });
+    }
+};
+
+module.exports = { loginAdmin, getAdminProfile, logoutAdmin};
