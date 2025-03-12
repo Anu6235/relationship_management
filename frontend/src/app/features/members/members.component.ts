@@ -234,7 +234,7 @@ export class MembersComponent implements OnInit {
 
     const initialsDiv = document.createElement('div');
     initialsDiv.className = 'w-full h-full flex items-center justify-center bg-blue-500 text-white rounded-full';
-    const initials = `${member.first_name.charAt(0)}${member.last_name.charAt(0)}`;
+    const initials = `${member.first_name.charAt(0).toUpperCase()}${member.last_name.charAt(0).toUpperCase()}`;
     initialsDiv.textContent = initials;
 
     // Remove any existing initials div
@@ -421,6 +421,7 @@ export class MembersComponent implements OnInit {
               // Update the member with the complete response data
               this.members[index] = response.data;
             }
+            this.loadMembers();
             this.closeVerificationModal();
           }
         },

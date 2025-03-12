@@ -75,7 +75,7 @@ module.exports = (sequelize, DataTypes) => {
     
     // Add association for the many-to-many relationship with Member
     ParentTable.belongsToMany(models.Member, {
-      through: 'MemberParentTable',
+      through: 'member_parent_table',
       foreignKey: 'parent_table_id',
       otherKey: 'member_id',
       as: 'members'

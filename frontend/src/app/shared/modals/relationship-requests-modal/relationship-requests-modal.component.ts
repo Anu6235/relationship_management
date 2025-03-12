@@ -99,57 +99,26 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
       });
   }
 
-  fetchPendingDivorceRequests(): void {
-    if (!this.memberId) {
-      this.loading = false;
-      return;
-    }
-    
-    this.memberService.getPendingDivorceRequests(this.memberId)
-      .subscribe({
-        next: (response) => {
-          if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-            this.processDivorceRequests(response.data);
-          } else {
-            this.divorceRequests = [];
-          }
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('Error fetching divorce requests:', error);
-          this.error = this.error || 'Failed to load divorce requests. Please try again.';
-          this.divorceRequests = [];
-          this.loading = false;
-        }
-      });
-  }
-
   processMarriageRequests(requests: any[]): void {
     this.marriageRequests = [];
     
-    console.log('Processing marriage requests:', requests);
-    
     const pendingRequests = requests.filter(req => req.status === 'pending');
-    console.log('Pending marriage requests:', pendingRequests.length);
     
     if (pendingRequests.length === 0) {
       return;
     }
   
     let completedRequests = 0;
-    
-    console.log(pendingRequests,'pendingRequests')
-    
+       
     pendingRequests.forEach(request => {
-      // Determine if current user is husband or wife
-      const isHusband = this.memberId === request.husband_id;
+     
+     // Determine if current user is husband or wife
+     const isHusband = this.memberId === request.husband_id;
+
+     const isProposer = request.requested_by === this.memberId;
       
-      // Determine if current user is proposer based on marriage proposal type
-      const husbandProposed = request.proposal_type === 'husband_to_wife';
-      const isProposer = (isHusband && husbandProposed) || (!isHusband && !husbandProposed);
-      
-      // Get the partner's ID
-      const partnerId = isHusband ? request.wife_id : request.husband_id;
+    // Get the partner's ID
+    const partnerId = isHusband ? request.wife_id : request.husband_id;
       
       console.log('Fetching partner info for marriage request:', request.id, 'Partner ID:', partnerId);
       
@@ -201,60 +170,6 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
             if (completedRequests === pendingRequests.length) {
               console.log('All marriage partner info requests completed (with some errors)');
             }
-          }
-        });
-    });
-  }
-
-  processDivorceRequests(requests: any[]): void {
-    this.divorceRequests = [];
-    
-    const pendingRequests = requests.filter(req => req.status === 'pending');
-    
-    if (pendingRequests.length === 0) {
-      return;
-    }
-    
-    pendingRequests.forEach(request => {
-      // Determine if current user is initiator or recipient
-      const isInitiator = this.memberId === request.initiator_id;
-      
-      // Get the partner's ID
-      const partnerId = isInitiator ? request.recipient_id : request.initiator_id;
-      
-      // Fetch partner info
-      this.memberService.getMember(partnerId)
-        .subscribe({
-          next: (response) => {
-            if (response.data) {
-              // Process the partner's profile image URL
-              const partner = response.data;
-              if (partner.profile_image) {
-                partner.profile_image_url = this.getImageUrl(partner.profile_image);
-              }
-              
-              this.divorceRequests.push({
-                id: request.id,
-                requestType: 'divorce',
-                partner: partner,
-                isProposer: isInitiator,
-                message: isInitiator ? 
-                  `You have requested a divorce from ${partner.first_name} ${partner.last_name}.` :
-                  `${partner.first_name} ${partner.last_name} has requested a divorce from you.`,
-                timestamp: request.created_at
-              });
-              
-              // Sort requests by timestamp if available
-              this.divorceRequests.sort((a, b) => {
-                if (a.timestamp && b.timestamp) {
-                  return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-                }
-                return 0;
-              });
-            }
-          },
-          error: (error) => {
-            console.error('Error fetching partner info:', error);
           }
         });
     });
@@ -347,6 +262,85 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
           this.loading = false;
         }
       });
+  }
+
+    fetchPendingDivorceRequests(): void {
+    if (!this.memberId) {
+      this.loading = false;
+      return;
+    }
+    
+    this.memberService.getPendingDivorceRequests(this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+            this.processDivorceRequests(response.data);
+          } else {
+            this.divorceRequests = [];
+          }
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error fetching divorce requests:', error);
+          this.error = this.error || 'Failed to load divorce requests. Please try again.';
+          this.divorceRequests = [];
+          this.loading = false;
+        }
+      });
+  }
+  
+  processDivorceRequests(requests: any[]): void {
+    this.divorceRequests = [];
+    
+    const pendingRequests = requests.filter(req => req.status === 'pending');
+    
+    if (pendingRequests.length === 0) {
+      return;
+    }
+    
+    pendingRequests.forEach(request => {
+      // Determine if current user is initiator or recipient
+      const isInitiator = this.memberId === request.initiator_id;
+      
+      // Get the partner's ID
+      const partnerId = isInitiator ? request.recipient_id : request.initiator_id;
+      
+      // Fetch partner info
+      this.memberService.getMember(partnerId)
+        .subscribe({
+          next: (response) => {
+            if (response.data) {
+              // Process the partner's profile image URL
+              const partner = response.data;
+              if (partner.profile_image) {
+                partner.profile_image_url = this.getImageUrl(partner.profile_image);
+              }
+              
+              this.divorceRequests.push({
+                id: request.id,
+                requestType: 'divorce',
+                partner: partner,
+                isProposer: isInitiator,
+                message: isInitiator ? 
+                  `You have requested a divorce from ${partner.first_name} ${partner.last_name}.` :
+                  `${partner.first_name} ${partner.last_name} has requested a divorce from you.`,
+                timestamp: request.created_at
+              });
+              
+              // Sort requests by timestamp if available
+              this.divorceRequests.sort((a, b) => {
+                if (a.timestamp && b.timestamp) {
+                  return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                }
+                return 0;
+              });
+            }
+          },
+          error: (error) => {
+            console.error('Error fetching partner info:', error);
+          }
+        });
+    });
   }
 
   confirmDivorce(requestId: number): void {
