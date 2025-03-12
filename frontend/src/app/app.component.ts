@@ -16,8 +16,5 @@ export class AppComponent implements OnInit{
   ) {}
   
   ngOnInit() {
-    this.authService.registerBrowserCloseEvent();
-    this.authService.checkBrowserCloseLogout();
-    sessionStorage.setItem('app_session', 'active');
   }
 }

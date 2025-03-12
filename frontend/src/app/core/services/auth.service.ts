@@ -15,16 +15,21 @@ export class AuthService {
   private router = inject(Router);
 
   constructor() {
-    // Check if token exists on service initialization
     this.checkTokenAndAuthenticate();
+    this.setupTabCloseDetection();
   }
 
-  // Check for token and authenticate if it exists
   private checkTokenAndAuthenticate(): void {
     const token = localStorage.getItem('token');
     if (token) {
+      const wasTabClosed = sessionStorage.getItem('app_session') === null;
+      
+      if (wasTabClosed) {
+        this.logOut(true);
+        return;
+      }
+      
       this.isAuthenticatedSubject.next(true);
-      // Load user profile silently, don't logout on error
       this.http.get<UserResponse>(`${this.API_URL}/auth/admin`).subscribe({
         next: (response) => {
           if (response.success) {
@@ -32,12 +37,16 @@ export class AuthService {
           }
         },
         error: () => {
-          // Don't logout on error during initialization
           console.warn("Failed to load user profile, but keeping authentication state");
         }
       });
     }
   }
+
+  // Setup detection for tab close vs page refresh
+  private setupTabCloseDetection(): void {
+    sessionStorage.setItem('app_session', 'active');
+}
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.API_URL}/auth/login`, credentials)
@@ -45,6 +54,8 @@ export class AuthService {
         tap(response => {
           if (response.success && response.token) {
             localStorage.setItem('token', response.token);
+            // Set session marker when logging in
+            sessionStorage.setItem('app_session', 'active');
             this.isAuthenticatedSubject.next(true);
             this.loadUserProfile().subscribe();
           }
@@ -69,27 +80,10 @@ export class AuthService {
       );
   }
 
-  // Method to handle browser close
-  registerBrowserCloseEvent(): void {
-    window.addEventListener('beforeunload', () => {
-      if (this.isAuthenticatedSubject.value) {
-        // Set a flag indicating the browser is being closed
-        localStorage.setItem('browser_closing', 'true');
-      }
-    });
-  }
-
-  // Check if browser was closed (to be called during app initialization)
-  checkBrowserCloseLogout(): void {
-    const wasBrowserClosed = localStorage.getItem('browser_closing') === 'true';
-    if (wasBrowserClosed) {
-      this.logOut(false); // Logout without navigation
-    }
-    localStorage.removeItem('browser_closing');
-  }
 
   logOut(navigate = true): void {
     localStorage.removeItem('token');
+    sessionStorage.removeItem('app_session');
     this.isAuthenticatedSubject.next(false);
     this.currentUserSubject.next(null);
     if (navigate) {
