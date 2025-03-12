@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { AppConfigService } from '../../core/services/app-config.service';
 
@@ -22,15 +22,12 @@ export class SidebarComponent implements OnInit {
     { category: 'Home', title: 'Dashboard', icon: 'ti ti-layout-dashboard', link: '/dashboard' },
     { category: 'APPS', title: 'Members', icon: 'ti ti-users', link: '/members' },
     { title: 'Settings', icon: 'ti ti-settings', link: '/settings' },
-    // { title: 'Cards', icon: 'ti ti-cards', link: '/cards' },
-    // { title: 'Forms', icon: 'ti ti-file-description', link: '/forms' },
-    // { title: 'Typography', icon: 'ti ti-typography', link: '/typography' },
-    { category: 'AUTH', title: 'Login', icon: 'ti ti-login', link: '/login' },
-    // { title: 'Register', icon: 'ti ti-user-plus', link: '/register' }
   ];
 
   logoUrl: string | null = null;
   appName: string = 'App Name';
+@Output() shrink = new EventEmitter<boolean>();
+ 
 
   constructor(private appConfigService: AppConfigService) {}
 
@@ -62,5 +59,9 @@ export class SidebarComponent implements OnInit {
 
   toggleSidebar() {
     document.querySelector('.left-sidebar')?.classList.toggle('collapse');
+  }
+
+  Shrinksidebar(){
+    this.shrink.emit(false);
   }
 }

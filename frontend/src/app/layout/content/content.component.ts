@@ -10,5 +10,9 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   styleUrl: './content.component.css'
 })
 export class ContentComponent {
+  isSidebarExpanded = false;
 
+  expandside(expand: boolean) {
+    this.isSidebarExpanded = expand;
+  }
 }
