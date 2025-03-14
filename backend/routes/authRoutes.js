@@ -6,6 +6,5 @@ const router = express.Router();
 
 router.post('/login', loginAdmin);
 router.get('/admin', protect, getAdminProfile);
-router.post('/logout', logoutAdmin); 
 
 module.exports = router;

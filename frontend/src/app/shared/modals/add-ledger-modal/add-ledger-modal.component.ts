@@ -54,7 +54,7 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
       name: ['', Validators.required],
       description: ['', Validators.required],
       amount: [0, [Validators.required, Validators.min(0)]],
-      start_date: [null, Validators.required], // Explicitly set to null initially
+      start_date: [null, Validators.required], 
       duration_value: [30, [Validators.required, Validators.min(1)]],
       duration_unit: ['day', Validators.required],
       fine_amount: [0, [Validators.required, Validators.min(0)]],
@@ -73,12 +73,12 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
   }
   patchFormWithLedgerTypeData(ledgerType: LedgerType) {
     if (!ledgerType) return;
-
+  
     console.log('Original ledger type:', ledgerType);
     console.log('Original start_date:', ledgerType.start_date);
-
+  
     this.ledgerTypeForm.reset();
-
+  
     // Prepare start date
     let startDate: string | null = null;
     if (ledgerType.start_date) {
@@ -90,12 +90,12 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
         startDate = null;
       }
     }
-
+  
     this.ledgerTypeForm.patchValue({
       name: ledgerType.name || '',
       description: ledgerType.description || '',
       amount: ledgerType.amount || 0,
-      start_date: startDate, 
+      start_date: startDate, // Use the formatted date
       duration_value: ledgerType.duration_value || 30,
       duration_unit: ledgerType.duration_unit || 'day',
       fine_amount: ledgerType.fine_amount || 0,
@@ -103,9 +103,9 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
       fine_interval_unit: ledgerType.fine_interval_unit || 'day',
       is_active: ledgerType.is_active !== undefined ? ledgerType.is_active : true
     }, { emitEvent: true }); 
-
+  
     this.rebuildConditions(ledgerType);
-
+  
     console.log('Patched form values:', this.ledgerTypeForm.value);
   }
 
@@ -128,12 +128,10 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
     }
   }
   
-  formatDateForInput(date: Date): string {
+  private formatDateForInput(date: Date | string | null): string {
     if (!date) return '';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const d = new Date(date);
+    return d.toISOString().split('T')[0];
   }
 
 
@@ -155,6 +153,8 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
   }
 
 onSubmit() {
+  console.log("logged");
+  
   if (this.ledgerTypeForm.valid) {
     this.isSubmitting = true;
     
@@ -168,15 +168,15 @@ onSubmit() {
     });
 
     const formValue = this.ledgerTypeForm.value;
+    const startDate = formValue.start_date ? new Date(formValue.start_date).toISOString().split('T')[0] : '';
+console.log(startDate,"start date");
 
     const formData: Partial<LedgerType> = {
       name: formValue.name,
       description: formValue.description,
       amount: formValue.amount,
       is_active: formValue.is_active,
-      start_date: formValue.start_date 
-        ? new Date(formValue.start_date + 'T00:00:00Z') 
-        : undefined,
+      start_date: startDate,
       duration_value: formValue.duration_value,
       duration_unit: formValue.duration_unit,
       fine_amount: formValue.fine_amount,
@@ -192,7 +192,7 @@ onSubmit() {
           next: (response) => {
             console.log('Update response:', response);
             console.log('Updated start date:', response.data.start_date);
-            this.save.emit(response);
+            // this.save.emit(response);
             this.isSubmitting = false;
             this.close.emit();
           },

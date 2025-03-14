@@ -59,12 +59,17 @@ module.exports = (sequelize, DataTypes) => {
 
   // Instance method to recalculate fine
   Ledger.prototype.recalculateFine = async function(models) {
-    if (this.invoice_status !== 1) {
-      return this; // Only recalculate for pending invoices
+    if (this.invoice_status !== 1 && this.invoice_status !== 3) {
+      return this; // Only recalculate for pending invoices and overdue invoices
     }
     
     const ledgerType = await models.LedgerType.findByPk(this.ledger_type_id);
     if (!ledgerType) {
+      return this;
+    }
+    
+     // Skip fine calculation if apply_fine is false
+    if (!ledgerType.apply_fine) {
       return this;
     }
     

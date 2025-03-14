@@ -1,6 +1,7 @@
 const app = require('./app');
 const db = require('./models');
 const { setupLedgerScheduler } = require('./utils/ledgerScheduler');
+const { startScheduler } = require('./utils/ledgerScheduler')
 const { scheduleFineCalculation } = require('./tasks/fineCalculation');
 
 
@@ -11,6 +12,9 @@ db.sequelize.sync().then(() => {
         console.log(`Server running on port ${PORT}`);
     });
     
-    setupLedgerScheduler();
+    setupLedgerScheduler(true);
+    console.log('🚀 Starting scheduler...');
+startScheduler();
+
     scheduleFineCalculation();
 });

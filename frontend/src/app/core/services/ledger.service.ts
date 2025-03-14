@@ -19,116 +19,123 @@ export class LedgerService {
 
   constructor(private http: HttpClient) { }
 
- // Ledger Type Methods
- getAllLedgerTypes(): Observable<LedgerTypeResponse> {
-  return this.http.get<LedgerTypeResponse>(`${this.baseUrl}/ledger-types`);
-}
-
-getLedgerTypeById(id: number): Observable<SingleLedgerTypeResponse> {
-  return this.http.get<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types/${id}`);
-}
-
-createLedgerType(ledgerType: Partial<LedgerType>): Observable<SingleLedgerTypeResponse> {
-  // Ensure start_date is converted to ISO string if it exists
-  const processedLedgerType: any = { ...ledgerType };
-
-  if (processedLedgerType.start_date) {
-    processedLedgerType.start_date = 
-      processedLedgerType.start_date instanceof Date 
-        ? processedLedgerType.start_date.toISOString() 
-        : new Date(processedLedgerType.start_date).toISOString();
+  // Ledger Type Methods
+  getAllLedgerTypes(): Observable<LedgerTypeResponse> {
+    return this.http.get<LedgerTypeResponse>(`${this.baseUrl}/ledger-types`);
   }
 
-  console.log('Create Ledger Type - Processed Data:', processedLedgerType);
-  
-  return this.http.post<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types`, processedLedgerType);
-}
-
-updateLedgerType(id: number, ledgerType: Partial<LedgerType>): Observable<SingleLedgerTypeResponse> {
-  const processedLedgerType: any = { ...ledgerType };
-
-  if (processedLedgerType.start_date) {
-    // Ensure UTC conversion
-    const utcDate = new Date(processedLedgerType.start_date);
-    processedLedgerType.start_date = utcDate.toISOString();
+  getLedgerTypeById(id: number): Observable<SingleLedgerTypeResponse> {
+    return this.http.get<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types/${id}`);
   }
 
-  return this.http.put<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types/${id}`, processedLedgerType);
-}
+  createLedgerType(ledgerType: Partial<LedgerType>): Observable<SingleLedgerTypeResponse> {
+    const processedLedgerType: any = { ...ledgerType };
 
-toggleLedgerTypeActivation(id: number): Observable<SingleLedgerTypeResponse> {
-  return this.http.put<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types/${id}/toggle-activation`, {});
-}
+    // Process date similar to MemberService
+    if (processedLedgerType.start_date instanceof Date) {
+      processedLedgerType.start_date = processedLedgerType.start_date.toISOString();
+    }
+    
+    return this.http.post<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types`, processedLedgerType);
+  }
 
-deleteLedgerType(id: number): Observable<any> {
-  return this.http.delete<any>(`${this.baseUrl}/ledger-types/${id}`);
-}
+  updateLedgerType(id: number, ledgerType: Partial<LedgerType>): Observable<SingleLedgerTypeResponse> {
+    const processedLedgerType: any = { ...ledgerType };
+console.log(processedLedgerType,"procces");
 
-getEligibleMembers(id: number): Observable<EligibleMembersResponse> {
-  return this.http.get<EligibleMembersResponse>(`${this.baseUrl}/ledger-types/${id}/eligible-members`);
-}
+    if (processedLedgerType.start_date instanceof Date) {
+      processedLedgerType.start_date = processedLedgerType.start_date.toISOString().split('T')[0];
+    }    
+    return this.http.put<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types/${id}`, processedLedgerType);
+  }
 
-getAllLedgers(): Observable<LedgerResponse> {
-  return this.http.get<LedgerResponse>(`${this.baseUrl}/ledgers`);
-}
+  toggleLedgerTypeActivation(id: number): Observable<SingleLedgerTypeResponse> {
+    return this.http.put<SingleLedgerTypeResponse>(`${this.baseUrl}/ledger-types/${id}/toggle-activation`, {});
+  }
 
-getLedgerById(id: number): Observable<SingleLedgerResponse> {
-  return this.http.get<SingleLedgerResponse>(`${this.baseUrl}/ledgers/${id}`);
-}
+  deleteLedgerType(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/ledger-types/${id}`);
+  }
 
-createLedger(ledger: Partial<Ledger>): Observable<SingleLedgerResponse> {
-  return this.http.post<SingleLedgerResponse>(`${this.baseUrl}/ledgers`, ledger);
-}
+  getEligibleMembers(id: number): Observable<EligibleMembersResponse> {
+    return this.http.get<EligibleMembersResponse>(`${this.baseUrl}/ledger-types/${id}/eligible-members`);
+  }
 
-updateLedgerStatus(id: number, status: number): Observable<SingleLedgerResponse> {
-  return this.http.put<SingleLedgerResponse>(`${this.baseUrl}/ledgers/${id}/status`, { invoice_status: status });
-}
+  // Ledger Types
 
-getMemberLedgers(memberId: number): Observable<LedgerResponse> {
-  return this.http.get<LedgerResponse>(`${this.baseUrl}/ledgers/member/${memberId}`);
-}
+  getAllLedgers(): Observable<LedgerResponse> {
+    return this.http.get<LedgerResponse>(`${this.baseUrl}/ledgers`);
+  }
 
-generateLedgers(ledgerTypeId: number): Observable<any> {
-  return this.http.post<any>(`${this.baseUrl}/ledgers/generate/${ledgerTypeId}`, {});
-}
+  getLedgerById(id: number): Observable<SingleLedgerResponse> {
+    return this.http.get<SingleLedgerResponse>(`${this.baseUrl}/ledgers/${id}`);
+  }
 
-recalculateFines(): Observable<any> {
-  return this.http.post<any>(`${this.baseUrl}/ledgers/recalculate-fines`, {});
-}
+  createLedger(ledger: Partial<Ledger>): Observable<SingleLedgerResponse> {
+    return this.http.post<SingleLedgerResponse>(`${this.baseUrl}/ledgers`, ledger);
+  }
 
-payLedger(id: number): Observable<SingleLedgerResponse> {
-  return this.http.post<SingleLedgerResponse>(`${this.baseUrl}/ledgers/${id}/pay`, {});
-}
+  updateLedgerStatus(id: number, status: number): Observable<SingleLedgerResponse> {
+    return this.http.put<SingleLedgerResponse>(`${this.baseUrl}/ledgers/${id}/status`, { invoice_status: status });
+  }
 
-getOverdueLedgers(): Observable<LedgerResponse> {
-  return this.http.get<LedgerResponse>(`${this.baseUrl}/ledgers/overdue`);
-}
+  getMemberLedgers(memberId: number): Observable<LedgerResponse> {
+    return this.http.get<LedgerResponse>(`${this.baseUrl}/ledgers/member/${memberId}`);
+  }
 
-// Scheduler Methods
-getSchedulerStatus(): Observable<any> {
-  return this.http.get<any>(`${this.baseUrl}/scheduler/status`);
-}
+  generateLedgersforLedgerType(ledgerTypeId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ledgers/generate/${ledgerTypeId}`, {});
+  }
 
-startScheduler(frequency?: string): Observable<any> {
-  return this.http.post<any>(`${this.baseUrl}/scheduler/start`, { frequency });
-}
+  generateLedgers(): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ledgers/generate/all`, {});
+  }
 
-stopScheduler(): Observable<any> {
-  return this.http.post<any>(`${this.baseUrl}/scheduler/stop`, {});
-}
+  deleteLedger(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/ledgers/${id}`);
+  }
 
-checkLastLedgerCreationTime(ledgerTypeId: number): Observable<any> {
-  return this.http.get<any>(`${this.baseUrl}/ledgers/last-created/${ledgerTypeId}`);
-}
+  recalculateFines(): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ledgers/recalculate-fines`, {});
+  }
 
-getNextScheduledGeneration(ledgerTypeId: number): Observable<any> {
-  return this.http.get<any>(`${this.baseUrl}/ledger-types/${ledgerTypeId}/next-generation`);
-}
+  payLedger(id: number): Observable<SingleLedgerResponse> {
+    return this.http.post<SingleLedgerResponse>(`${this.baseUrl}/ledgers/${id}/pay`, {});
+  }
 
-setLedgerTypeStartDate(id: number, startDate: Date): Observable<SingleLedgerTypeResponse> {
-  return this.http.put<SingleLedgerTypeResponse>(
-    `${this.baseUrl}/ledger-types/${id}/start-date`, 
-    { start_date: startDate.toISOString() }
-  );
-}
+  getOverdueLedgers(): Observable<LedgerResponse> {
+    return this.http.get<LedgerResponse>(`${this.baseUrl}/ledgers/overdue`);
+  }
+
+  // Scheduler Methods
+  getSchedulerStatus(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/scheduler/status`);
+  }
+
+  getScheduledLedgers(): Observable<LedgerResponse> {
+    return this.http.get<LedgerResponse>(`${this.baseUrl}/ledgers/scheduled`);
+  }
+
+  startScheduler(frequency?: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/scheduler/start`, { frequency });
+  }
+
+  stopScheduler(): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/scheduler/stop`, {});
+  }
+
+  checkLastLedgerCreationTime(ledgerTypeId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/ledgers/last-created/${ledgerTypeId}`);
+  }
+
+  getNextScheduledGeneration(ledgerTypeId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/ledger-types/${ledgerTypeId}/next-generation`);
+  }
+
+  setLedgerTypeStartDate(id: number, startDate: Date): Observable<SingleLedgerTypeResponse> {
+    return this.http.put<SingleLedgerTypeResponse>(
+      `${this.baseUrl}/ledger-types/${id}/start-date`, 
+      { start_date: startDate.toISOString() }
+    );
+  }
 }

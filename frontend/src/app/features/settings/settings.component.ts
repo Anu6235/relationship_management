@@ -90,6 +90,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.stopLedgerCreation();
   }
 
+  
   loadCurrentConfig() {
     this.appConfigService.getAppConfig().subscribe({
       next: (response) => {
@@ -369,8 +370,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       }
     }
     
-    this.ledgerService.generateLedgers(ledgerTypeId).subscribe({
-      next: (response) => {
+    this.ledgerService.generateLedgersforLedgerType(ledgerTypeId).subscribe({      next: (response) => {
         if (response.success) {
           // Update the last creation time for this ledger type
           this.lastLedgerCreationTime[ledgerTypeId] = new Date();

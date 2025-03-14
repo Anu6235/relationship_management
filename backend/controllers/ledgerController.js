@@ -99,7 +99,15 @@ exports.createLedger = async (req, res) => {
             });
         }
         
-        // Generate ledger name with ledger type name
+        // Check if member satisfies ledger type conditions
+        if (!ledgerType.isApplicableToMember(member)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Member does not meet the conditions for this ledger type'
+            });
+        }
+        
+        // Generate ledger name
         const now = new Date();
         const month = now.toLocaleString('default', { month: 'short' }).toLowerCase();
         const year = now.getFullYear();
@@ -107,7 +115,7 @@ exports.createLedger = async (req, res) => {
         
         // Calculate due date if not provided
         const invoice_date = new Date();
-        const calculated_due_date = due_date || ledgerType.calculateDueDate(invoice_date);
+        const calculated_due_date = due_date ? new Date(due_date) : ledgerType.calculateDueDate(invoice_date);
         
         const newLedger = await Ledger.create({
             ledger_type_id,
@@ -115,10 +123,9 @@ exports.createLedger = async (req, res) => {
             member_id,
             invoice_created_at: invoice_date,
             due_date: calculated_due_date,
-            amount,
-            fine: 0.00,
-            fine_last_calculated_at: null,
-            total_amount: parseFloat(amount),
+            amount: amount || ledgerType.amount,
+            fee: 0,
+            total_amount: amount || ledgerType.amount,
             invoice_status,
             paid_at: null
         });
@@ -135,6 +142,7 @@ exports.createLedger = async (req, res) => {
         });
     }
 };
+
 
 // Update ledger status
 exports.updateLedgerStatus = async (req, res) => {
@@ -206,6 +214,34 @@ exports.getLedgersByMemberId = async (req, res) => {
             message: error.message
         });
     }
+};
+
+// Delete a ledger
+exports.deleteLedger = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const ledger = await Ledger.findByPk(id);
+
+        if (!ledger) {
+            return res.status(404).json({
+                success: false,
+                message: 'Ledger not found'
+            });
+        }
+
+        await ledger.destroy();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Ledger deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting ledger:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }    
 };
 
 // Recalculate fines for all pending/overdue ledgers

@@ -44,6 +44,7 @@ export class EditLedgerModalComponent implements OnInit {
       name: ['', Validators.required],
       description: ['', Validators.required],
       amount: [0, [Validators.required, Validators.min(0)]],
+      start_date: [new Date(), Validators.required],
       duration_value: [30, [Validators.required, Validators.min(1)]],
       duration_unit: ['day', Validators.required],
       fine_amount: [0, [Validators.required, Validators.min(0)]],
@@ -91,6 +92,12 @@ export class EditLedgerModalComponent implements OnInit {
 
     if (this.conditions.length === 0) {
       this.addCondition();
+    }
+
+    if (ledgerType.start_date) {
+      this.ledgerTypeForm.patchValue({
+        start_date: new Date(ledgerType.start_date)
+      });
     }
   }
 

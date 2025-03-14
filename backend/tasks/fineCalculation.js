@@ -21,11 +21,20 @@ const scheduleFineCalculation = () => {
           invoice_status: {
             [Op.in]: [1, 3] // Pending or Already marked as Overdue
           }
-        }
+        },
+        include: [
+          {
+            model: LedgerType,
+            as: 'ledgerType',
+            where: {
+              apply_fine: true // Only process ledgers with types that apply fines
+            }
+          }
+        ]
       });
       
       if (overdueLegers.length === 0) {
-        console.log('No overdue ledgers found.');
+        console.log('No overdue ledgers found that applies fines.');
         return;
       }
       

@@ -1,8 +1,18 @@
+export interface Member {
+  id: number;
+  profile_image?: string;
+  profile_image_url?: string | null;
+  first_name: string;
+  last_name: string;
+  mobile_number: string;
+  email: string;
+  address: string;
+}
+
 export interface Ledger {
     id: number;
     ledger_type_id: number;
     ledger_name: string;
-    member_id: number;
     invoice_created_at: Date;
     due_date: Date;
     amount: number;
@@ -14,7 +24,7 @@ export interface Ledger {
     createdAt?: Date;
     updatedAt?: Date;
     ledgerType?: LedgerType;
-    member?: any;
+    member?: Member;
   }
   
   export interface LedgerType {
@@ -23,7 +33,7 @@ export interface Ledger {
     description: string;
     amount: number;
     is_active: boolean;
-    start_date?: Date; 
+    start_date: string; 
     duration_value: number;
     duration_unit: 'minute' | 'hour' | 'day' | 'month';
     fine_amount: number;

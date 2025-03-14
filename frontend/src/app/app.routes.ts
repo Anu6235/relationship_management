@@ -28,11 +28,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/settings.component')
           .then(m => m.SettingsComponent)
       },
-    //   {
-    //     path: 'cards',
-    //     loadComponent: () => import('./components/cards/cards.component')
-    //       .then(m => m.CardsComponent)
-    //   },
+      {
+        path: 'accounts',
+        loadComponent: () => import('./features/accounts/accounts.component')
+          .then(m => m.AccountsComponent)
+      },
     //   {
     //     path: 'forms',
     //     loadComponent: () => import('./components/forms/forms.component')

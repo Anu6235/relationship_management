@@ -22,6 +22,7 @@ export class SidebarComponent implements OnInit {
     { category: 'Home', title: 'Dashboard', icon: 'ti ti-layout-dashboard', link: '/dashboard' },
     { category: 'APPS', title: 'Members', icon: 'ti ti-users', link: '/members' },
     { title: 'Settings', icon: 'ti ti-settings', link: '/settings' },
+    { title: 'Accounts', icon: 'ti ti-cash', link: '/accounts' },
   ];
 
   logoUrl: string | null = null;

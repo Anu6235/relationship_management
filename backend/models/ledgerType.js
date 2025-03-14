@@ -22,9 +22,14 @@ module.exports = (sequelize, DataTypes) => {
     },
     start_date: {
       type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null
+    },   
+    apply_fine: {
+      type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: DataTypes.NOW
-    },    
+      defaultValue: false
+    }, 
     duration_value: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -98,6 +103,11 @@ module.exports = (sequelize, DataTypes) => {
   
   // Calculate fine based on days since due date
   LedgerType.prototype.calculateFine = function(dueDate, currentDate = new Date()) {
+    
+    if (!this.apply_fine || this.fine_amount <= 0 || this.fine_interval_value <= 0) {
+      return 0;
+    }
+
     if (!dueDate || currentDate <= dueDate || this.fine_amount <= 0 || this.fine_interval_value <= 0) {
       return 0;
     }
@@ -160,5 +170,6 @@ module.exports = (sequelize, DataTypes) => {
       as: 'ledgers'
     });
   };
+
   return LedgerType;
 };

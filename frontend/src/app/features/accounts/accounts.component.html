@@ -1,0 +1,158 @@
+<h2 class="text-2xl font-bold mb-6">Accounts Dashboard</h2>
+<!-- Cards -->
+<div class="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
+  <!-- All Reciepts Card -->
+  <div
+    class="flex items-center p-4 bg-white rounded-lg shadow-xs cursor-pointer hover:bg-gray-50 transition-colors duration-150"
+    [class.bg-blue-50]="selectedLedgerTypeId === null"
+    (click)="filterLedgersByType(null)"
+  >
+    <div
+      class="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full dark:text-orange-100 dark:bg-orange-500"
+    >
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"
+        ></path>
+      </svg>
+    </div>
+    <div>
+      <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+        All Reciepts
+      </p>
+      <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        {{ ledgers.length }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Dynamic Ledger Type Cards -->
+  <div
+    *ngFor="let ledgerType of ledgerTypes"
+    class="flex items-center p-4 bg-white rounded-lg shadow-xs cursor-pointer hover:bg-gray-50 transition-colors duration-150"
+    [class.bg-blue-50]="selectedLedgerTypeId === ledgerType.id"
+    (click)="filterLedgersByType(ledgerType.id)"
+  >
+    <div
+      class="p-3 mr-4 text-green-500 bg-green-100 rounded-full dark:text-green-100 dark:bg-green-500"
+    >
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
+          clip-rule="evenodd"
+        ></path>
+      </svg>
+    </div>
+    <div>
+      <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+        {{ ledgerType.name }}
+      </p>
+      <p class="text-lg font-semibold text-gray-700 dark:text-gray-200"></p>
+    </div>
+  </div>
+</div>
+<br />
+
+<!--Table -->
+<div class="w-full overflow-hidden rounded-lg shadow-xs">
+  <div class="w-full overflow-x-auto">
+    <table class="w-full whitespace-no-wrap">
+      <thead>
+        <tr
+          class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50"
+        >
+          <th class="px-4 py-3">ID</th>
+          <th class="px-4 py-3">Member</th>
+          <th class="px-4 py-3">Ledger Type</th>
+          <th class="px-4 py-3">Invoice Date</th>
+          <th class="px-4 py-3">Due Date</th>
+          <th class="px-4 py-3">Amount</th>
+          <th class="px-4 py-3">Fine</th>
+          <th class="px-4 py-3">Total</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y">
+        <tr
+          *ngFor="let ledger of filteredLedgers; let i = index"
+          class="text-gray-700"
+        >
+          <td class="px-4 py-3 text-sm">{{ i + 1 }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center text-sm">
+              <div>
+                <p class="font-semibold">
+                  {{ toTitleCase(ledger.member?.first_name ?? "") }}&nbsp;
+                  {{ toTitleCase(ledger.member?.last_name ?? "") }}
+                </p>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-sm">
+            {{ ledger.ledgerType?.name || "Unknown" }}
+          </td>
+          <td class="px-4 py-3 text-sm">
+            {{ formatDate(ledger.invoice_created_at) }}
+          </td>
+          <td class="px-4 py-3 text-sm">
+            {{ formatDate(ledger.due_date) }}
+          </td>
+          <td class="px-4 py-3 text-sm">
+            {{ formatCurrency(ledger.amount) }}
+          </td>
+          <td class="px-4 py-3 text-sm">
+            {{ formatCurrency(ledger.fine) }}
+          </td>
+          <td class="px-4 py-3 text-sm">
+            {{ formatCurrency(ledger.total_amount) }}
+          </td>
+          <td class="px-4 py-3 text-xs">
+            <span
+              class="px-2 py-1 font-semibold leading-tight rounded-full"
+              [ngClass]="getStatusClass(ledger.invoice_status)"
+            >
+              {{ getStatusText(ledger.invoice_status) }}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center space-x-4 text-sm">
+              <button
+                class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-blue-600 rounded-lg focus:outline-none focus:shadow-outline-gray"
+                aria-label="Download"
+                (click)="downloadLedger(ledger)"
+              >
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fill-rule="evenodd"
+                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  ></path>
+                </svg>
+              </button>
+              <button
+                class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-red-600 rounded-lg focus:outline-none focus:shadow-outline-gray"
+                aria-label="Delete"
+                (click)="deleteLedger(ledger.id)"
+              >
+                <svg
+                  class="w-5 h-5"
+                  aria-hidden="true"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                    clip-rule="evenodd"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
