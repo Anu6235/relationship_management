@@ -59,39 +59,34 @@ module.exports = (sequelize, DataTypes) => {
 
   // Instance method to recalculate fine
   Ledger.prototype.recalculateFine = async function(models) {
-    if (this.invoice_status !== 1 && this.invoice_status !== 3) {
-      return this; // Only recalculate for pending invoices and overdue invoices
+    if (this.invoice_status !== 1) {
+      return this; // Only recalculate for pending invoices
     }
-    
+
     const ledgerType = await models.LedgerType.findByPk(this.ledger_type_id);
     if (!ledgerType) {
       return this;
     }
-    
-     // Skip fine calculation if apply_fine is false
-    if (!ledgerType.apply_fine) {
-      return this;
-    }
-    
+
     const now = new Date();
     const dueDate = new Date(this.due_date);
-    
+
     if (now <= dueDate) {
       return this; // Not overdue yet
     }
-    
+
     const fine = ledgerType.calculateFine(dueDate, now);
-    
+
     // Update the fine amount and total amount
     this.fine = fine;
     this.fine_last_calculated_at = now;
     this.total_amount = parseFloat(this.amount) + parseFloat(fine);
-    
+
     // Update invoice status to overdue if not already
     if (this.invoice_status === 1) {
       this.invoice_status = 3; // Set to overdue
     }
-    
+
     await this.save();
     return this;
   };

@@ -24,6 +24,15 @@ export class AccountsComponent implements OnInit{
   isLoading: boolean = false;
   schedulerStatus: boolean = false;
 
+  iconColors: string[] = [
+    'text-blue-500 bg-blue-100',
+    'text-green-500 bg-green-100',
+    'text-orange-500 bg-orange-100',   
+    'text-red-500 bg-red-100',
+    'text-gray-500 bg-gray-100',
+    'text-teal-500 bg-teal-100',
+  ];
+
   constructor(
     private ledgerService: LedgerService,
     private ledgerPdfService: LedgerPdfService,
@@ -179,7 +188,12 @@ export class AccountsComponent implements OnInit{
   }
 
   formatDate(date: Date | string): string {
-    return new Date(date).toLocaleDateString();
+    if (!date) return '';
+    const d = new Date(date);
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0'); 
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   }
 
   formatCurrency(amount: number): string {
@@ -252,6 +266,14 @@ export class AccountsComponent implements OnInit{
         //toaster
       }
     });
+  }
+
+  getLedgerCountByType(ledgerTypeId: number): number {
+    return this.ledgers.filter(ledger => ledger.ledger_type_id === ledgerTypeId).length;
+  }
+
+  getIconColor(index: number): string {
+    return this.iconColors[index % this.iconColors.length];
   }
 
   recalculateFines(): void {

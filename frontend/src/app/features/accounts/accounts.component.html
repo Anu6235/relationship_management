@@ -28,14 +28,12 @@
 
   <!-- Dynamic Ledger Type Cards -->
   <div
-    *ngFor="let ledgerType of ledgerTypes"
+    *ngFor="let ledgerType of ledgerTypes; let i = index"
     class="flex items-center p-4 bg-white rounded-lg shadow-xs cursor-pointer hover:bg-gray-50 transition-colors duration-150"
     [class.bg-blue-50]="selectedLedgerTypeId === ledgerType.id"
     (click)="filterLedgersByType(ledgerType.id)"
   >
-    <div
-      class="p-3 mr-4 text-green-500 bg-green-100 rounded-full dark:text-green-100 dark:bg-green-500"
-    >
+    <div class="p-3 mr-4 rounded-full" [ngClass]="getIconColor(i)">
       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
         <path
           fill-rule="evenodd"
@@ -48,7 +46,9 @@
       <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
         {{ ledgerType.name }}
       </p>
-      <p class="text-lg font-semibold text-gray-700 dark:text-gray-200"></p>
+      <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        {{ getLedgerCountByType(ledgerType.id) }}
+      </p>
     </div>
   </div>
 </div>
@@ -64,7 +64,7 @@
         >
           <th class="px-4 py-3">ID</th>
           <th class="px-4 py-3">Member</th>
-          <th class="px-4 py-3">Ledger Type</th>
+          <th class="px-4 py-3">Subscription Plan</th>
           <th class="px-4 py-3">Invoice Date</th>
           <th class="px-4 py-3">Due Date</th>
           <th class="px-4 py-3">Amount</th>

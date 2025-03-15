@@ -152,58 +152,77 @@ export class AddLedgerModalComponent implements OnInit, OnChanges {
     return field?.options || [];
   }
 
-onSubmit() {
-  console.log("logged");
+  onSubmit() {
+    console.log("logged");
   
-  if (this.ledgerTypeForm.valid) {
-    this.isSubmitting = true;
-    
-    const conditionConfig: any = {};
-    this.conditions.controls.forEach(control => {
-      const field = control.get('field')?.value;
-      const value = control.get('value')?.value;
-      if (field && value) {
-        conditionConfig[field] = value;
+    if (this.ledgerTypeForm.valid) {
+      this.isSubmitting = true;
+  
+      // Build condition_config object
+      const conditionConfig: any = {};
+      this.conditions.controls.forEach(control => {
+        const field = control.get('field')?.value;
+        const value = control.get('value')?.value;
+        if (field && value) {
+          conditionConfig[field] = value;
+        }
+      });
+  
+      // Prepare form data
+      const formValue = this.ledgerTypeForm.value;
+      const startDate = formValue.start_date ? new Date(formValue.start_date).toISOString().split('T')[0] : '';
+      console.log(startDate, "start date");
+  
+      const formData: Partial<LedgerType> = {
+        name: formValue.name,
+        description: formValue.description,
+        amount: formValue.amount,
+        is_active: formValue.is_active,
+        start_date: startDate,
+        duration_value: formValue.duration_value,
+        duration_unit: formValue.duration_unit,
+        fine_amount: formValue.fine_amount,
+        fine_interval_value: formValue.fine_interval_value,
+        fine_interval_unit: formValue.fine_interval_unit,
+        condition_config: conditionConfig
+      };
+  
+      console.log('Final form data:', formData);
+  
+      if (this.editMode && this.ledgerTypeToEdit) {
+        // Edit existing ledger type
+        this.ledgerService.updateLedgerType(this.ledgerTypeToEdit.id, formData)
+          .subscribe({
+            next: (response) => {
+              console.log('Update response:', response);
+              console.log('Updated start date:', response.data.start_date);
+              this.save.emit(response); // Emit the save event
+              this.isSubmitting = false;
+              this.close.emit();
+            },
+            error: (error) => {
+              console.error('Error updating ledger type', error);
+              this.isSubmitting = false;
+            }
+          });
+      } else {
+        // Create new ledger type
+        this.ledgerService.createLedgerType(formData)
+          .subscribe({
+            next: (response) => {
+              console.log('Create response:', response);
+              this.save.emit(response); // Emit the save event
+              this.isSubmitting = false;
+              this.close.emit();
+            },
+            error: (error) => {
+              console.error('Error creating ledger type', error);
+              this.isSubmitting = false;
+            }
+          });
       }
-    });
-
-    const formValue = this.ledgerTypeForm.value;
-    const startDate = formValue.start_date ? new Date(formValue.start_date).toISOString().split('T')[0] : '';
-console.log(startDate,"start date");
-
-    const formData: Partial<LedgerType> = {
-      name: formValue.name,
-      description: formValue.description,
-      amount: formValue.amount,
-      is_active: formValue.is_active,
-      start_date: startDate,
-      duration_value: formValue.duration_value,
-      duration_unit: formValue.duration_unit,
-      fine_amount: formValue.fine_amount,
-      fine_interval_value: formValue.fine_interval_value,
-      fine_interval_unit: formValue.fine_interval_unit,
-      condition_config: conditionConfig
-    };
-
-    console.log('Final form data:', formData);
-    if (this.editMode && this.ledgerTypeToEdit) {
-      this.ledgerService.updateLedgerType(this.ledgerTypeToEdit.id, formData)
-        .subscribe({
-          next: (response) => {
-            console.log('Update response:', response);
-            console.log('Updated start date:', response.data.start_date);
-            // this.save.emit(response);
-            this.isSubmitting = false;
-            this.close.emit();
-          },
-          error: (error) => {
-            console.error('Error updating ledger type', error);
-            this.isSubmitting = false;
-          }
-        });
     }
   }
-}
 
   onCancel() {
     this.close.emit();

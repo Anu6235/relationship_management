@@ -56,19 +56,11 @@ exports.createLedgerType = async (req, res) => {
             start_date,
             duration_value, 
             duration_unit, 
-            apply_fine,
             fine_amount,
             fine_interval_value,
             fine_interval_unit,
             condition_config 
         } = req.body;
-
-         // Process the new field
-    const shouldApplyFine = apply_fine !== undefined ? apply_fine : true;
-    
-    // If no fine is applied, set fine-related fields to 0
-    const finalFineAmount = shouldApplyFine ? fine_amount : 0;
-    const finalFineIntervalValue = shouldApplyFine ? fine_interval_value : 0;
 
         let processedStartDate;
         if (start_date) {
@@ -95,9 +87,8 @@ exports.createLedgerType = async (req, res) => {
             start_date: processedStartDate,
             duration_value,
             duration_unit,
-            apply_fine: shouldApplyFine,
-            fine_amount: finalFineAmount,
-            fine_interval_value: finalFineIntervalValue,
+            fine_amount,
+            fine_interval_value,
             fine_interval_unit,
             condition_config
         });
@@ -148,19 +139,11 @@ exports.updateLedgerType = async (req, res) => {
             start_date,
             duration_value, 
             duration_unit, 
-            apply_fine, 
             fine_amount,
             fine_interval_value,
             fine_interval_unit,
             condition_config 
         } = req.body;
-        
-        // Process the new field
-        const shouldApplyFine = apply_fine !== undefined ? apply_fine : ledgerType.apply_fine;
-        
-        // If no fine is applied, set fine-related fields to 0
-        const finalFineAmount = shouldApplyFine ? fine_amount : 0;
-        const finalFineIntervalValue = shouldApplyFine ? fine_interval_value : 0;
         
         const ledgerType = await LedgerType.findByPk(id);
         
@@ -201,7 +184,6 @@ exports.updateLedgerType = async (req, res) => {
             start_date: processedStartDate, 
             duration_value,
             duration_unit,
-            apply_fine,
             fine_amount,
             fine_interval_value,
             fine_interval_unit,

@@ -39,7 +39,6 @@ async function generateLedgersForType(ledgerType) {
     const now = new Date();
     const month = now.toLocaleString('default', { month: 'short' }).toLowerCase();
     const year = now.getFullYear();
-    const ledger_name = `${ledgerType.name.toLowerCase()}-${month}-${year}`;
     
     // Find the current period start time
     const lastGenerationTime = await getLastGenerationTime(ledgerType.id);
@@ -73,19 +72,18 @@ async function generateLedgersForType(ledgerType) {
         continue;
       }
       
-      // Calculate due date based on the ledger type configuration
-      const due_date = ledgerType.calculateDueDate ? 
-        ledgerType.calculateDueDate(now) : 
-        new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // Default to 30 days
+      // Calculate due date based on the ledger generation time plus the fine interval
+      const generation_date = new Date(currentPeriodStartTime);
+      const due_date = calculateDueDateFromGenerationDate(generation_date, ledgerType);
       
       const ledger = await Ledger.create({
         ledger_type_id: ledgerType.id,
         ledger_name: specific_ledger_name,
         member_id: member.id,
-        invoice_created_at: now,
+        invoice_created_at: generation_date,
         due_date,
         amount: ledgerType.amount,
-        fee: 0, // Initial fee is 0
+        fine: 0, // Initial fee is 0
         total_amount: ledgerType.amount,
         invoice_status: 1 // Pending
       });
@@ -100,6 +98,32 @@ async function generateLedgersForType(ledgerType) {
     console.error(`Error generating ledgers for type ${ledgerType.name}:`, error);
     throw error;
   }
+}
+
+// Function to calculate due date from generation date based on the fine interval
+function calculateDueDateFromGenerationDate(generationDate, ledgerType) {
+  const due_date = new Date(generationDate);
+  
+  // Add the fine interval to the generation date to get the due date
+  switch(ledgerType.fine_interval_unit) {
+    case 'minute':
+      due_date.setMinutes(due_date.getMinutes() + ledgerType.fine_interval_value);
+      break;
+    case 'hour':
+      due_date.setHours(due_date.getHours() + ledgerType.fine_interval_value);
+      break;
+    case 'day':
+      due_date.setDate(due_date.getDate() + ledgerType.fine_interval_value);
+      break;
+    case 'month':
+      due_date.setMonth(due_date.getMonth() + ledgerType.fine_interval_value);
+      break;
+    default:
+      // If no fine interval unit is defined, default to days
+      due_date.setDate(due_date.getDate() + ledgerType.fine_interval_value);
+  }
+  
+  return due_date;
 }
 
 // Function to get the last generation time for a ledger type
@@ -127,7 +151,7 @@ function calculateCurrentPeriodStartTime(lastGenerationTime, ledgerType) {
   
   if (!lastGenerationTime) {
     // If there's no previous generation, use the ledger type's start date or current time
-    return ledgerType.start_date || now;
+    return ledgerType.start_date ? new Date(ledgerType.start_date) : now;
   }
   
   // Calculate the time interval in milliseconds

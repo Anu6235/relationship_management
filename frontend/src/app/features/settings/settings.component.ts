@@ -631,7 +631,8 @@ formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
 }
 
-formatDate(date: Date | null): string {
+
+formatDate(date: Date | string | null): string {
   if (!date) return '';
   const d = new Date(date);
   const day = d.getDate().toString().padStart(2, '0');
