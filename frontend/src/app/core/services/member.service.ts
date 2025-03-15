@@ -16,8 +16,8 @@ import {
   providedIn: 'root',
 })
 export class MemberService {
-  private readonly API_URL = 'http://localhost:5000/api/members';
-  private readonly BASE_URL = 'http://localhost:5000';
+  private readonly API_URL = ' /api/members';
+  private readonly BASE_URL = '';
   private http = inject(HttpClient);
 
   constructor() {}

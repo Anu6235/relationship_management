@@ -23,7 +23,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-
+// Serve Angular frontend
+const distPath = path.join(__dirname, 'dist', 'frontend', 'browser');
+app.use(express.static(distPath));
 app.use('/', indexRouter);
 
 app.use('/users', usersRouter);
