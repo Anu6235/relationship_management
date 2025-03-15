@@ -23,9 +23,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-// Serve Angular frontend
-const distPath = path.join(__dirname, 'dist', 'frontend', 'browser');
-app.use(express.static(distPath));
+
 app.use('/', indexRouter);
 
 app.use('/users', usersRouter);
@@ -35,7 +33,14 @@ app.use('/api/app-config', appConfigRouter);
 app.use('/api/ledgers', ledgerRoutes);
 app.use('/api/ledger-types', ledgerTypeRoutes);
 
+// Serve Angular frontend
+const distPath = path.join(__dirname, 'dist', 'frontend', 'browser');
+app.use(express.static(distPath));
 
+// Handle Angular routing (must be AFTER API routes)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+});
 app.use('*', (req, res) => {
     res.status(404).json({
         success: false,
