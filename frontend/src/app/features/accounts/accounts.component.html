@@ -1,14 +1,22 @@
 <h2 class="text-2xl font-bold mb-6">Accounts Dashboard</h2>
 <!-- Cards -->
 <div class="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
-  <!-- All Reciepts Card -->
+  <!-- All Receipts Card -->
   <div
-    class="flex items-center p-4 bg-white rounded-lg shadow-xs cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-    [class.bg-blue-50]="selectedLedgerTypeId === null"
+    class="flex items-center p-4 rounded-lg cursor-pointer transition-all duration-150"
+    [ngClass]="{
+      'bg-blue-600 text-white shadow-xs-dark': selectedLedgerTypeId === null,
+      'bg-white shadow-xs-dark hover:bg-gray-50': selectedLedgerTypeId !== null
+    }"
     (click)="filterLedgersByType(null)"
   >
     <div
-      class="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full dark:text-orange-100 dark:bg-orange-500"
+      class="p-3 mr-4 rounded-full"
+      [ngClass]="{
+        'text-white bg-blue-500': selectedLedgerTypeId === null,
+        'text-orange-500 bg-orange-100 dark:text-orange-100 dark:bg-orange-500':
+          selectedLedgerTypeId !== null
+      }"
     >
       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
         <path
@@ -17,10 +25,22 @@
       </svg>
     </div>
     <div>
-      <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
-        All Reciepts
+      <p
+        class="mb-2 text-xs-dark font-medium"
+        [ngClass]="{
+          'text-blue-100': selectedLedgerTypeId === null,
+          'text-gray-600 dark:text-gray-400': selectedLedgerTypeId !== null
+        }"
+      >
+        All Receipts
       </p>
-      <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+      <p
+        class="text-lg font-semibold"
+        [ngClass]="{
+          'text-white': selectedLedgerTypeId === null,
+          'text-gray-700 dark:text-gray-200': selectedLedgerTypeId !== null
+        }"
+      >
         {{ ledgers.length }}
       </p>
     </div>
@@ -29,11 +49,23 @@
   <!-- Dynamic Ledger Type Cards -->
   <div
     *ngFor="let ledgerType of ledgerTypes; let i = index"
-    class="flex items-center p-4 bg-white rounded-lg shadow-xs cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-    [class.bg-blue-50]="selectedLedgerTypeId === ledgerType.id"
+    class="flex items-center p-4 rounded-lg cursor-pointer transition-all duration-150"
+    [ngClass]="{
+      'bg-blue-600 text-white shadow-xs-dark':
+        selectedLedgerTypeId === ledgerType.id,
+      'bg-white shadow-xs-dark hover:bg-gray-50':
+        selectedLedgerTypeId !== ledgerType.id
+    }"
     (click)="filterLedgersByType(ledgerType.id)"
   >
-    <div class="p-3 mr-4 rounded-full" [ngClass]="getIconColor(i)">
+    <div
+      class="p-3 mr-4 rounded-full"
+      [ngClass]="{
+        'text-white bg-blue-500': selectedLedgerTypeId === ledgerType.id,
+        'text-current': selectedLedgerTypeId !== ledgerType.id
+      }"
+      [class]="selectedLedgerTypeId !== ledgerType.id ? getIconColor(i) : ''"
+    >
       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
         <path
           fill-rule="evenodd"
@@ -43,17 +75,30 @@
       </svg>
     </div>
     <div>
-      <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+      <p
+        class="mb-2 text-sm font-medium"
+        [ngClass]="{
+          'text-blue-100': selectedLedgerTypeId === ledgerType.id,
+          'text-gray-600 dark:text-gray-400':
+            selectedLedgerTypeId !== ledgerType.id
+        }"
+      >
         {{ ledgerType.name }}
       </p>
-      <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+      <p
+        class="text-lg font-semibold"
+        [ngClass]="{
+          'text-white': selectedLedgerTypeId === ledgerType.id,
+          'text-gray-700 dark:text-gray-200':
+            selectedLedgerTypeId !== ledgerType.id
+        }"
+      >
         {{ getLedgerCountByType(ledgerType.id) }}
       </p>
     </div>
   </div>
 </div>
 <br />
-
 <!--Table -->
 <div class="w-full overflow-hidden rounded-lg shadow-xs">
   <div class="w-full overflow-x-auto">
