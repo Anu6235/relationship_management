@@ -321,8 +321,20 @@
               </div>
             </div>
 
-            <div *ngIf="!request.is_outgoing">
-              <span class="text-sm text-gray-600">Awaiting confirmation</span>
+            <div *ngIf="!request.is_outgoing" class="flex space-x-2">
+              <button
+                [ngStyle]="{ 'background-color': '#1A73E8' }"
+                (click)="confirmMarriage(request.request_id)"
+                class="px-4 py-2 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+              >
+                Accept
+              </button>
+              <button
+                (click)="rejectMarriage(request.request_id)"
+                class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Decline
+              </button>
             </div>
             <div *ngIf="request.is_outgoing">
               <span class="text-sm text-gray-600">Awaiting response</span>

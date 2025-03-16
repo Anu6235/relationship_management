@@ -20,6 +20,7 @@ interface RelationshipResponse {
   };
 }
 
+
 @Component({
   selector: 'app-family-relationship',
   standalone: true,
@@ -75,7 +76,10 @@ export class FamilyRelationshipComponent implements OnInit {
               spouse: response.data.relationships.spouse,
               divorced_spouses: response.data.relationships.divorced_spouses,
               widowed_spouses: response.data.relationships.widowed_spouses,
-              pending_spouses: response.data.relationships.pending_spouses,
+              pending_spouses: response.data.relationships.pending_spouses.map(request => ({
+                ...request,
+                request_id: request.request_id
+              })),
               children: response.data.relationships.children,
               parents: response.data.relationships.parents,
               marriages: response.data.relationships.marriages
@@ -201,5 +205,62 @@ export class FamilyRelationshipComponent implements OnInit {
   toSentenceCase(str: string): string {
     if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
+  confirmMarriage(requestId: number): void {
+    console.log('Marriage request ID:', requestId);
+    console.log('Member ID:', this.memberId);
+    if (!requestId) {
+      console.error('Invalid request ID');
+      return;
+    }
+    
+    this.memberService.confirmMarriage(requestId, this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success) {
+            // Remove the request from pending_spouses
+            if (this.relationshipData && this.relationshipData.pending_spouses) {
+              this.relationshipData.pending_spouses = this.relationshipData.pending_spouses.filter(
+                spouse => spouse.request_id !== requestId
+              );
+            }
+            
+            // Refresh relationship data to show updated marriage status
+            this.fetchRelationshipData();
+          } else {
+            console.error('Failed to confirm marriage:', response);
+          }
+        },
+        error: (error) => {
+          console.error('Error confirming marriage:', error);
+        }
+      });
+  }
+  
+  rejectMarriage(requestId: number): void {
+    if (!requestId) {
+      console.error('Invalid request ID');
+      return;
+    }
+    
+    this.memberService.declineMarriage(requestId, this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success) {
+            // Remove the request from pending_spouses
+            if (this.relationshipData && this.relationshipData.pending_spouses) {
+              this.relationshipData.pending_spouses = this.relationshipData.pending_spouses.filter(
+                spouse => spouse.request_id !== requestId
+              );
+            }
+          } else {
+            console.error('Failed to reject marriage:', response);
+          }
+        },
+        error: (error) => {
+          console.error('Error rejecting marriage:', error);
+        }
+      });
   }
 }

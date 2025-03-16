@@ -79,6 +79,7 @@ exports.getMemberRelationships = async (req, res) => {
         ],
         status: 'pending'
       },
+      attributes: ['id', 'husband_id', 'wife_id', 'status', 'createdAt', 'requested_by'],
       include: [
         { model: Member, as: 'husband', attributes: ['id', 'first_name', 'last_name', 'profile_image', 'marital_status', 'gender'] },
         { model: Member, as: 'wife', attributes: ['id', 'first_name', 'last_name', 'profile_image', 'marital_status', 'gender'] }
@@ -93,6 +94,8 @@ exports.getMemberRelationships = async (req, res) => {
       if (!potentialSpouse) return null;
       
       potentialSpouse.dataValues.request_id = request.id;
+      console.log("id is :",request.id);
+      
       potentialSpouse.dataValues.is_outgoing = isRequester;
       potentialSpouse.dataValues.created_at = request.createdAt;
       potentialSpouse.dataValues.relationship_status = 'pending';
