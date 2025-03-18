@@ -16,7 +16,9 @@ const router = express.Router();
 // Set up multer storage for file uploads
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
-      const uploadDir = 'public/images/member-images';
+    const threeFoldersBack = path.resolve(__dirname, '../../');
+    const uploadDir = path.join(threeFoldersBack, 'public/images/member-images');
+    //   const uploadDir = 'public/images/member-images';
       // Create directory if it doesn't exist
       if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
