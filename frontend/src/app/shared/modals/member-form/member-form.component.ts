@@ -812,25 +812,88 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
 }
   
   createDivorceForNewMarriage(husbandId: number, wifeId: number, marriageDate: string, divorceDate: string, requestedBy: number): void {
-    const divorceData = {
-      husband_id: husbandId,
-      wife_id: wifeId,
-      marriage_date: new Date(marriageDate),
-      divorce_date: new Date(divorceDate),
-      requested_by: requestedBy
-    };
+    // Check if there are multiple divorce entries in the form
+    const maritalStatuses = this.memberForm.get('maritalStatuses')?.value || [];
+    const gender = this.memberForm.get('gender')?.value;
     
-    this.memberService.createDivorceRequestForNew(divorceData).subscribe({
-      next: (response) => {
-        this.memberSaved.emit(response.data);
-        this.resetForm();
-      },
-      error: (error) => {
-        console.error('Error creating divorce record:', error);
-        this.formSubmitting = false;
-        this.errorMessage = 'Failed to record divorce information.';
+    // Check for multiple divorce records
+    let validDivorceCount = 1;
+    const additionalDivorces = [];
+    
+    // Process additional divorces from marital statuses
+    for (let i = 1; i < maritalStatuses.length; i++) {
+      const status = maritalStatuses[i];
+      if ((status.maritalStatus === 'Divorced' || status.maritalStatus === 'Widowed') && status.spouse_id) {
+        validDivorceCount++;
+        
+        // Ensure marriage_date is always a Date object (default to today if null)
+        const marriageDate = status.marriage_date 
+          ? new Date(status.marriage_date) 
+          : new Date(); // Default to today instead of null
+        
+        additionalDivorces.push({
+          husband_id: gender === 'male' ? requestedBy : status.spouse_id,
+          wife_id: gender === 'female' ? requestedBy : status.spouse_id,
+          marriage_date: marriageDate,
+          divorce_date: status.divorce_date ? new Date(status.divorce_date) : new Date(),
+          requested_by: requestedBy
+        });
       }
-    });
+    }
+    
+    if (validDivorceCount === 1) {
+      // Single divorce case
+      const divorceData = {
+        husband_id: husbandId,
+        wife_id: wifeId,
+        marriage_date: new Date(marriageDate),
+        divorce_date: new Date(divorceDate),
+        requested_by: requestedBy
+      };
+      
+      this.memberService.createDivorceRequestForNew(divorceData).subscribe({
+        next: (response) => {
+          this.memberSaved.emit(response.data);
+          this.resetForm();
+        },
+        error: (error) => {
+          console.error('Error creating divorce record:', error);
+          this.formSubmitting = false;
+          this.errorMessage = 'Failed to record divorce information.';
+        }
+      });
+    } 
+    else if (validDivorceCount > 1) {
+      // Multiple divorces case - similar to how multiple marriages are handled
+      const divorces = [
+        {
+          husband_id: husbandId,
+          wife_id: wifeId,
+          marriage_date: new Date(marriageDate),
+          divorce_date: new Date(divorceDate),
+          requested_by: requestedBy
+        },
+        ...additionalDivorces
+      ];
+      
+      // Create multiple divorces in a single request
+      const divorceData = {
+        divorces: divorces,
+        requested_by: requestedBy
+      };
+      
+      this.memberService.createDivorceRequestForNew(divorceData).subscribe({
+        next: (response) => {
+          this.memberSaved.emit(response.data);
+          this.resetForm();
+        },
+        error: (error) => {
+          console.error('Error creating multiple divorce records:', error);
+          this.formSubmitting = false;
+          this.errorMessage = 'Failed to record divorce information.';
+        }
+      });
+    }
   }
 
   createDivorceForExistingMarriage(marriageId: number, divorceDate: string, requestedBy: number): void {

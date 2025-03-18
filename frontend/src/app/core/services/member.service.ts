@@ -173,62 +173,80 @@ export class MemberService {
 
   // =================== DIVORCE MANAGEMENT ===================
 
-// Create a divorce request for existing marriage
-createDivorceRequestForExisting(divorceData: { 
-  marriage_id: number; 
-  divorce_date: Date; 
-  requested_by: number 
-}): Observable<any> {
-  return this.http.post(`${this.API_URL}/divorce/existing`, divorceData).pipe(
-    catchError(this.handleError)
-  );
-}
+  // Create a divorce request for existing marriage
+  createDivorceRequestForExisting(divorceData: {
+    marriage_id?: number;
+    divorce_date?: Date;
+    requested_by?: number;
+    divorces?: Array<{
+      marriage_id: number;
+      divorce_date: Date;
+      requested_by: number;
+    }>;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/divorce/existing`, divorceData).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-// Create a divorce request for marriage not in system
-createDivorceRequestForNew(divorceData: { 
-  husband_id: number; 
-  wife_id: number; 
-  marriage_date: Date;
-  divorce_date: Date; 
-  requested_by: number 
-}): Observable<any> {
-  return this.http.post(`${this.API_URL}/divorce/new`, divorceData).pipe(
-    catchError(this.handleError)
-  );
-}
+  // Create a divorce request for marriage not in system
+  createDivorceRequestForNew(divorceData: {
+    husband_id?: number;
+    wife_id?: number;
+    marriage_date?: Date;
+    divorce_date?: Date;
+    requested_by?: number;
+    divorces?: Array<{
+      husband_id: number;
+      wife_id: number;
+      marriage_date: Date;
+      divorce_date: Date;
+      requested_by: number;
+    }>;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/divorce/new`, divorceData).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-// Confirm a divorce
-confirmDivorce(
-  divorceId: number, 
-  respondingMemberId: number, 
-  marriageDate?: Date
-): Observable<any> {
-  return this.http.put(`${this.API_URL}/divorce/${divorceId}/confirm`, {
-    responding_member_id: respondingMemberId,
-    marriage_date: marriageDate
-  }).pipe(
-    catchError(this.handleError)
-  );
-}
+  // Confirm a divorce request
+  confirmDivorce(requestId: number, respondingMemberId: number): Observable<any> {
+    return this.http.put<any>(`${this.API_URL}/divorce/${requestId}/confirm`, {
+      responding_member_id: respondingMemberId
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+  
+  declineDivorce(requestId: number, respondingMemberId: number): Observable<any> {
+    return this.http.put<any>(`${this.API_URL}/divorce/${requestId}/decline`, {
+      responding_member_id: respondingMemberId
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-// Decline a divorce request
-declineDivorce(
-  divorceId: number, 
-  respondingMemberId: number
-): Observable<any> {
-  return this.http.put(`${this.API_URL}/divorce/${divorceId}/decline`, {
-    responding_member_id: respondingMemberId,
-  }).pipe(
-    catchError(this.handleError)
-  );
-}
+  // Get pending divorce requests for a member
+  getPendingDivorceRequests(memberId: number): Observable<any> {
+    return this.http.get<any>(`${this.API_URL}/divorce-requests/${memberId}`).pipe(
+      map(response => {
+        // Process image URLs for husband and wife in each request
+        if (response.data && Array.isArray(response.data)) {
+          response.data.forEach((request: ParentTable) => {
+            if (request.husband) {
+              request.husband = this.processImageUrls(request.husband);
+            }
+            if (request.wife) {
+              request.wife = this.processImageUrls(request.wife);
+            }
+          });
+        }
+        return response;
+      }),
+      catchError(this.handleError)
+    );
+  }
 
-// Get pending divorce requests for a member
-getPendingDivorceRequests(memberId: number): Observable<any> {
-  return this.http.get(`${this.API_URL}/divorce-requests/${memberId}`).pipe(
-    catchError(this.handleError)
-  );
-}
 
   // =================== RELATIONSHIP MANAGEMENT ===================
 
@@ -273,6 +291,13 @@ getPendingDivorceRequests(memberId: number): Observable<any> {
               );
             }
             
+            // Process pending divorces 
+            if (relationships.pending_divorces && Array.isArray(relationships.pending_divorces)) {
+              relationships.pending_divorces = relationships.pending_divorces.map(spouse => 
+                this.processImageUrls(spouse)
+              );
+            }
+            
             // Process children
             if (relationships.children && Array.isArray(relationships.children)) {
               relationships.children = relationships.children.map(child => 
@@ -293,7 +318,6 @@ getPendingDivorceRequests(memberId: number): Observable<any> {
       catchError(this.handleError)
     );
   }
-
 
    // Get all marriages for a specific member (new method)
   getMemberMarriages(memberId: number): Observable<any> {

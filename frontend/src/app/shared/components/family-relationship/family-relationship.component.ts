@@ -13,6 +13,7 @@ interface RelationshipResponse {
       divorced_spouses: Member[];
       widowed_spouses: Member[];
       pending_spouses: any[]; 
+      pending_divorces: any[]; 
       children: Member[];
       parents: Member[];
       marriages: any[];
@@ -37,7 +38,8 @@ export class FamilyRelationshipComponent implements OnInit {
     spouse: Member[];
     divorced_spouses: Member[];
     widowed_spouses: Member[];
-    pending_spouses: any[]; 
+    pending_spouses: any[];
+    pending_divorces: any[];  
     children: Member[];
     parents: Member[];
     marriages: any[];
@@ -80,6 +82,10 @@ export class FamilyRelationshipComponent implements OnInit {
                 ...request,
                 request_id: request.request_id
               })),
+              pending_divorces: response.data.relationships.pending_divorces?.map(request => ({
+                ...request,
+                request_id: request.request_id
+              })) || [],
               children: response.data.relationships.children,
               parents: response.data.relationships.parents,
               marriages: response.data.relationships.marriages
@@ -260,6 +266,63 @@ export class FamilyRelationshipComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error rejecting marriage:', error);
+        }
+      });
+  }
+
+  confirmDivorce(requestId: number): void {
+    console.log('Divorce request ID:', requestId);
+    console.log('Member ID:', this.memberId);
+    if (!requestId) {
+      console.error('Invalid request ID');
+      return;
+    }
+    
+    this.memberService.confirmDivorce(requestId, this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success) {
+            // Remove the request from pending_divorces
+            if (this.relationshipData && this.relationshipData.pending_divorces) {
+              this.relationshipData.pending_divorces = this.relationshipData.pending_divorces.filter(
+                request => request.request_id !== requestId
+              );
+            }
+            
+            // Refresh relationship data to show updated marriage status
+            this.fetchRelationshipData();
+          } else {
+            console.error('Failed to confirm divorce:', response);
+          }
+        },
+        error: (error) => {
+          console.error('Error confirming divorce:', error);
+        }
+      });
+  }
+  
+  rejectDivorce(requestId: number): void {
+    if (!requestId) {
+      console.error('Invalid request ID');
+      return;
+    }
+    
+    this.memberService.declineDivorce(requestId, this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success) {
+            // Remove the request from pending_divorces
+            if (this.relationshipData && this.relationshipData.pending_divorces) {
+              this.relationshipData.pending_divorces = this.relationshipData.pending_divorces.filter(
+                request => request.request_id !== requestId
+              );
+            }
+          } else {
+            console.error('Failed to reject divorce:', response);
+          }
+        },
+        error: (error) => {
+          console.error('Error rejecting divorce:', error);
         }
       });
   }

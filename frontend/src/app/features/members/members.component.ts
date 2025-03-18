@@ -552,24 +552,24 @@ export class MembersComponent implements OnInit {
   }
 
   // Confirm divorce
-  confirmDivorce(divorceId: number, marriageDate?: Date): void {
-    if (!this.currentUser || !this.currentUser.id) {
-      console.error('No current user found');
-      return;
-    }
+  // confirmDivorce(divorceId: number, marriageDate?: Date): void {
+  //   if (!this.currentUser || !this.currentUser.id) {
+  //     console.error('No current user found');
+  //     return;
+  //   }
     
-    this.memberService.confirmDivorce(divorceId, this.currentUser.id, marriageDate).subscribe({
-      next: (response) => {
-        if (response) {
-          this.showSuccessToast('Divorce confirmed');
-          this.loadMembers();
-        }
-      },
-      error: (error) => {
-        console.error('Error confirming divorce:', error);
-      }
-    });
-  }
+  //   this.memberService.confirmDivorce(divorceId, this.currentUser.id, marriageDate).subscribe({
+  //     next: (response) => {
+  //       if (response) {
+  //         this.showSuccessToast('Divorce confirmed');
+  //         this.loadMembers();
+  //       }
+  //     },
+  //     error: (error) => {
+  //       console.error('Error confirming divorce:', error);
+  //     }
+  //   });
+  // }
 
   // Decline divorce
   declineDivorce(divorceId: number): void {

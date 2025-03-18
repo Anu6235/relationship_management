@@ -68,6 +68,42 @@ exports.getMemberRelationships = async (req, res) => {
         widowedSpouses.push(spouse);
       }
     }
+
+    // 1.5 PENDING DIVORCE RELATIONSHIPS
+    const pendingDivorces = [];
+
+    const pendingDivorceRequests = await ParentTable.findAll({
+      where: {
+        [Op.or]: [
+          { husband_id: memberId },
+          { wife_id: memberId }
+        ],
+        status: 'pending divorce'
+      },
+      attributes: ['id', 'husband_id', 'wife_id', 'status', 'createdAt', 'requested_by'],
+      include: [
+        { model: Member, as: 'husband', attributes: ['id', 'first_name', 'last_name', 'profile_image', 'marital_status', 'gender'] },
+        { model: Member, as: 'wife', attributes: ['id', 'first_name', 'last_name', 'profile_image', 'marital_status', 'gender'] }
+      ]
+    });
+
+    // Format pending divorce requests
+    for (const request of pendingDivorceRequests) {
+      const isRequester = request.requested_by === memberId;
+      const spouseId = request.husband_id === memberId ? request.wife_id : request.husband_id;
+      const spouse = request.husband_id === memberId ? request.wife : request.husband;
+      
+      if (!spouse) continue;
+      
+      spouse.dataValues.request_id = request.id;
+      spouse.dataValues.is_outgoing = isRequester;
+      spouse.dataValues.created_at = request.createdAt;
+      spouse.dataValues.marriage_date = request.marriage_date;
+      spouse.dataValues.divorce_date = request.divorce_date;
+      spouse.dataValues.relationship_status = 'pending divorce';
+      
+      pendingDivorces.push(spouse);
+    }
     
     // 2. PENDING SPOUSE RELATIONSHIPS
     
@@ -277,6 +313,7 @@ exports.getMemberRelationships = async (req, res) => {
           divorced_spouses: divorcedSpouses,
           widowed_spouses: widowedSpouses,
           pending_spouses: pendingSpouses,
+          pending_divorces: pendingDivorces,
           children: childrenData,
           parents: parentsData,
           marriages: marriages.map(marriage => ({

@@ -56,6 +56,7 @@ export interface RelationshipResponse {
       divorced_spouses: Member[];
       widowed_spouses: Member[];
       pending_spouses: Member[];
+      pending_divorces: any[];
       children: Member[];
       parents: Member[];
       marriages: ParentTable[];

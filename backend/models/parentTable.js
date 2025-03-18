@@ -47,6 +47,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('pending', 'confirmed', 'pending divorce', 'divorced', 'widowed'),
       defaultValue: 'pending',
     },
+    original_status: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Stores the previous status when transitioning to pending divorce'
+    },
     is_current: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

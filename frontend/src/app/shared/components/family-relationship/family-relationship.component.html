@@ -32,15 +32,15 @@
             *ngIf="!relationshipData.member.profile_image"
             class="avatar-initials"
           >
-            {{ relationshipData.member.first_name.charAt(0)
-            }}{{ relationshipData.member.last_name.charAt(0) }}
+            {{ relationshipData.member.first_name.charAt(0).toUpperCase()
+            }}{{ relationshipData.member.last_name.charAt(0).toUpperCase() }}
           </div>
         </div>
 
         <div>
           <h2 class="text-2xl font-semibold text-gray-800">
-            {{ relationshipData.member.first_name }}
-            {{ relationshipData.member.last_name }}
+            {{ toSentenceCase(relationshipData.member.first_name) }}
+            {{ toSentenceCase(relationshipData.member.last_name) }}
           </h2>
           <div class="mt-1 text-sm text-gray-600">
             <span
@@ -131,7 +131,8 @@
               alt="{{ spouse.first_name }} {{ spouse.last_name }}"
             />
             <div *ngIf="!spouse.profile_image" class="avatar-initials">
-              {{ spouse.first_name.charAt(0) }}{{ spouse.last_name.charAt(0) }}
+              {{ spouse.first_name.charAt(0).toUpperCase()
+              }}{{ spouse.last_name.charAt(0).toUpperCase() }}
             </div>
           </div>
 
@@ -141,7 +142,8 @@
                 (click)="navigateToMember(spouse.id)"
                 class="text-blue-600 hover:underline cursor-pointer"
               >
-                {{ spouse.first_name }} {{ spouse.last_name }}
+                {{ toSentenceCase(spouse.first_name) }}
+                {{ toSentenceCase(spouse.last_name) }}
               </a>
             </h4>
             <p class="text-sm text-gray-600 mt-1">
@@ -186,7 +188,8 @@
               alt="{{ spouse.first_name }} {{ spouse.last_name }}"
             />
             <div *ngIf="!spouse.profile_image" class="avatar-initials">
-              {{ spouse.first_name.charAt(0) }}{{ spouse.last_name.charAt(0) }}
+              {{ spouse.first_name.charAt(0).toUpperCase()
+              }}{{ spouse.last_name.charAt(0).toUpperCase() }}
             </div>
           </div>
 
@@ -196,7 +199,8 @@
                 (click)="navigateToMember(spouse.id)"
                 class="text-blue-600 hover:underline cursor-pointer"
               >
-                {{ spouse.first_name }} {{ spouse.last_name }}
+                {{ toSentenceCase(spouse.first_name) }}
+                {{ toSentenceCase(spouse.last_name) }}
               </a>
             </h4>
             <p class="text-xs text-gray-600">
@@ -243,7 +247,8 @@
               alt="{{ spouse.first_name }} {{ spouse.last_name }}"
             />
             <div *ngIf="!spouse.profile_image" class="avatar-initials">
-              {{ spouse.first_name.charAt(0) }}{{ spouse.last_name.charAt(0) }}
+              {{ spouse.first_name.charAt(0).toUpperCase()
+              }}{{ spouse.last_name.charAt(0).toUpperCase() }}
             </div>
           </div>
 
@@ -253,7 +258,8 @@
                 (click)="navigateToMember(spouse.id)"
                 class="text-blue-600 hover:underline cursor-pointer"
               >
-                {{ spouse.first_name }} {{ spouse.last_name }}
+                {{ toSentenceCase(spouse.first_name) }}
+                {{ toSentenceCase(spouse.last_name) }}
               </a>
             </h4>
             <p class="text-xs text-gray-600">
@@ -302,13 +308,14 @@
                   alt="{{ request.first_name }} {{ request.last_name }}"
                 />
                 <div *ngIf="!request.profile_image" class="avatar-initials">
-                  {{ request.first_name.charAt(0)
-                  }}{{ request.last_name.charAt(0) }}
+                  {{ request.first_name.charAt(0).toUpperCase()
+                  }}{{ request.last_name.charAt(0).toUpperCase() }}
                 </div>
               </div>
               <div>
                 <p class="font-medium">
-                  {{ request.first_name }} {{ request.last_name }}
+                  {{ toSentenceCase(request.first_name) }}
+                  {{ toSentenceCase(request.last_name) }}
                 </p>
                 <p class="text-sm text-gray-600">
                   {{
@@ -344,6 +351,76 @@
       </div>
     </div>
 
+    <!-- Pending Divorces -->
+    <div
+      *ngIf="
+        relationshipData.pending_divorces &&
+        relationshipData.pending_divorces.length > 0
+      "
+      class="bg-white shadow-md rounded-lg p-6 mb-6"
+    >
+      <h3 class="text-lg font-medium text-gray-800 mb-4">
+        Pending Divorce Requests
+      </h3>
+      <div class="space-y-4">
+        <div
+          *ngFor="let request of relationshipData.pending_divorces"
+          class="p-4 bg-yellow-50 border border-yellow-200 rounded-md"
+        >
+          <div class="flex justify-between items-center">
+            <div class="flex items-center">
+              <div class="avatar-container avatar-small mr-3">
+                <img
+                  *ngIf="request.profile_image"
+                  [src]="getImageUrl(request.profile_image)"
+                  class="avatar-image"
+                  (error)="handleImageError($event, request)"
+                  alt="{{ request.first_name }} {{ request.last_name }}"
+                />
+                <div *ngIf="!request.profile_image" class="avatar-initials">
+                  {{ request.first_name.charAt(0).toUpperCase()
+                  }}{{ request.last_name.charAt(0).toUpperCase() }}
+                </div>
+              </div>
+              <div>
+                <p class="font-medium">
+                  {{ toSentenceCase(request.first_name)
+                  }}  {{ toSentenceCase(request.last_name) }}
+                </p>
+                <p class="text-sm text-gray-600">
+                  {{
+                    request.is_outgoing
+                      ? "Request sent by you"
+                      : "Request sent to you"
+                  }}
+                  on {{ formatDate(request.created_at) }}
+                </p>
+              </div>
+            </div>
+
+            <div *ngIf="!request.is_outgoing" class="flex space-x-2">
+              <button
+                [ngStyle]="{ 'background-color': '#1A73E8' }"
+                (click)="confirmDivorce(request.request_id)"
+                class="px-4 py-2 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+              >
+                Accept
+              </button>
+              <button
+                (click)="rejectDivorce(request.request_id)"
+                class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Decline
+              </button>
+            </div>
+            <div *ngIf="request.is_outgoing">
+              <span class="text-sm text-gray-600">Awaiting response</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Children Section -->
     <div
       *ngIf="relationshipData.children && relationshipData.children.length > 0"
@@ -366,7 +443,8 @@
               alt="{{ child.first_name }} {{ child.last_name }}"
             />
             <div *ngIf="!child.profile_image" class="avatar-initials">
-              {{ child.first_name.charAt(0) }}{{ child.last_name.charAt(0) }}
+              {{ child.first_name.charAt(0).toUpperCase()
+              }}{{ child.last_name.charAt(0).toUpperCase() }}
             </div>
           </div>
 
@@ -376,7 +454,8 @@
                 (click)="navigateToMember(child.id)"
                 class="text-blue-600 hover:underline cursor-pointer"
               >
-                {{ child.first_name }} {{ child.last_name }}
+                {{ toSentenceCase(child.first_name)
+                }}  {{ toSentenceCase(child.last_name) }}
               </a>
             </h4>
             <p class="text-xs text-gray-600">
@@ -418,7 +497,8 @@
               alt="{{ parent.first_name }} {{ parent.last_name }}"
             />
             <div *ngIf="!parent.profile_image" class="avatar-initials">
-              {{ parent.first_name.charAt(0) }}{{ parent.last_name.charAt(0) }}
+              {{ parent.first_name.charAt(0).toUpperCase()
+              }}{{ parent.last_name.charAt(0).toUpperCase() }}
             </div>
           </div>
 
@@ -428,7 +508,8 @@
                 (click)="navigateToMember(parent.id)"
                 class="text-blue-600 hover:underline cursor-pointer"
               >
-                {{ parent.first_name }} {{ parent.last_name }}
+                {{ toSentenceCase(parent.first_name) }}
+                {{ toSentenceCase(parent.last_name) }}
               </a>
             </h4>
             <p class="text-xs text-gray-600">
