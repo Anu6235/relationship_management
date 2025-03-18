@@ -27,7 +27,7 @@ export class LedgerPdfService {
       const response = await firstValueFrom(this.appConfigService.getAppConfig());
       if (response.success && response.data) {
         if (response.data.logo) {
-          this.logoUrl = `http://localhost:5000${response.data.logo}`;
+          this.logoUrl = `${response.data.logo}`;
         }
         this.appName = response.data.app_name || '';
         this.email = response.data.email || '';

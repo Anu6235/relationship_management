@@ -31,7 +31,7 @@ export class DynamicFaviconService {
           this.titleService.setTitle(appName);
 
           if (response.data.logo) {
-            this.changeFavicon(`http://localhost:5000${response.data.logo}`);
+            this.changeFavicon(`${response.data.logo}`);
           }
         }
       },

@@ -40,7 +40,7 @@ export class RelationshipRequestsModalComponent implements OnInit, OnChanges {
     private memberService: MemberService,
     private router: Router
   ) {
-    this.baseUrl = 'http://localhost:5000';
+    this.baseUrl = ' ';
   }
 
   ngOnInit(): void {

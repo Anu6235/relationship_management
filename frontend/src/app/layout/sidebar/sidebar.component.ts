@@ -43,7 +43,7 @@ export class SidebarComponent implements OnInit {
       next: (response) => {
         if (response.success && response.data) {
           if (response.data.logo) {
-            this.logoUrl = `http://localhost:5000${response.data.logo}`;
+            this.logoUrl = `${response.data.logo}`;
           }
           if (response.data.app_name) {
             this.appName = response.data.app_name;

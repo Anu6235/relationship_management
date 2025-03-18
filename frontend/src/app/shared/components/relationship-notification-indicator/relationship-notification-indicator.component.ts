@@ -48,7 +48,7 @@ export class RelationshipNotificationIndicatorComponent implements OnInit {
     private memberService: MemberService,
     private router: Router
   ) {
-    this.baseUrl = 'http://localhost:5000';
+    this.baseUrl = ' ';
   }
   ngOnInit(): void {
     this.checkForPendingRequests();

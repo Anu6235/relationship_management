@@ -101,7 +101,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
             contact: response.data.contact
           });
           if (response.data.logo) {
-            this.previewUrl = `http://localhost:5000${response.data.logo}`;
+            this.previewUrl = `${response.data.logo}`;
             this.fileName = response.data.logo.split('/').pop() || 'Uploaded logo';
           }
         }
