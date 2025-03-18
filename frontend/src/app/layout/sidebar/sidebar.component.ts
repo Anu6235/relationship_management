@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { AppConfigService } from '../../core/services/app-config.service';
 
@@ -24,7 +24,7 @@ export class SidebarComponent implements OnInit {
     { title: 'Settings', icon: 'ti ti-settings', link: '/settings' },
     { title: 'Accounts', icon: 'ti ti-cash', link: '/accounts' },
   ];
-
+  @Output() shrink = new EventEmitter<boolean>();
   logoUrl: string | null = null;
   appName: string = 'App Name';
 
@@ -59,4 +59,9 @@ export class SidebarComponent implements OnInit {
   toggleSidebar() {
     document.querySelector('.left-sidebar')?.classList.toggle('collapse');
   }
+
+  Shrinksidebar(){
+    this.shrink.emit(false);
+  }
+
 }

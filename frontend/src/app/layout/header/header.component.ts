@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -8,8 +8,13 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class HeaderComponent {
   constructor(private authService: AuthService) {}
-
+  @Output() expand = new EventEmitter<boolean>();
   onLogout(): void {
     this.authService.logOut();
   }
+  expandSidebar(){
+    this.expand.emit(true);
+  }
+
+
 }
