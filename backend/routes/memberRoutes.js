@@ -126,6 +126,7 @@ router.delete('/:id', protect, memberController.deleteMember);
 
 // =================== MARRIAGE MANAGEMENT ===================
 
+router.post('/marriages', marriageController.createMultipleMarriages);
 router.post('/marriage', marriageController.createMarriage);
 router.put("/marriage/:id/confirm", marriageController.confirmMarriage);
 router.put('/marriage/:id/decline', marriageController.declineMarriage);

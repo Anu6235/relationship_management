@@ -273,7 +273,7 @@ exports.getMemberRelationships = async (req, res) => {
           marital_relationship_status: member.marital_status
         },
         relationships: {
-          spouse: currentSpouse[0] || null, 
+          spouse: currentSpouse, 
           divorced_spouses: divorcedSpouses,
           widowed_spouses: widowedSpouses,
           pending_spouses: pendingSpouses,

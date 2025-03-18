@@ -1,5 +1,5 @@
 import { Component, OnInit, EventEmitter, Output, Input, ChangeDetectorRef } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MemberService } from '../../../core/services/member.service';
 import { CommonModule } from '@angular/common';
@@ -40,7 +40,7 @@ export class MemberFormComponent implements OnInit {
       } else if (value.marital_status?.toLowerCase() === 'widowed') {
         this.showSpouseSelection = true;
         this.showMarriageDatePicker = true;
-        this.loadDeceasedSpouses();
+        // this.loadDeceasedSpouses();
       }
     }
   }
@@ -65,7 +65,7 @@ export class MemberFormComponent implements OnInit {
   errorMessage: string = '';
   formSubmitting: boolean = false;
   spouseSearchControl = new FormControl('');
-  showDropdown = false;
+  showDropdown: boolean[] = [];
   spouseSearchText = '';
   selectedSpouseName = '';
   private subscriptions: Subscription[] = [];
@@ -88,6 +88,10 @@ export class MemberFormComponent implements OnInit {
     { value: 'Widowed', label: 'Widowed' }
   ];
 
+  get nonSingleMaritalStatusOptions() {
+    return this.maritalStatusOptions.filter(option => option.value !== 'Single');
+  }
+
   constructor(
     private fb: FormBuilder,
     private memberService: MemberService,
@@ -107,14 +111,18 @@ export class MemberFormComponent implements OnInit {
       verified_by: [null],
       status: ['Active', Validators.required],
       deceased: [false],
-      marital_status: ['', Validators.required],
       spouse_id: [null],
       marriage_date: [null],
       divorce_date: [null],
       deceased_spouse_id: [null],
       requested_by: [null],
+      maritalStatuses: this.fb.array([]),
       updated_at: [new Date()]
     });
+
+    this.addMaritalStatus();
+
+    this.showDropdown = [false];
 
     // Subscribe to spouse_id changes to update the search field
     const spouseIdSubscription = this.memberForm.get('spouse_id')?.valueChanges.subscribe(value => {
@@ -178,7 +186,7 @@ export class MemberFormComponent implements OnInit {
       } else if (lowercaseValue === 'widowed') {
         this.showSpouseSelection = true;
         this.showMarriageDatePicker = true;
-        this.loadDeceasedSpouses();
+        // this.loadDeceasedSpouses();
       }
     });
 
@@ -189,7 +197,7 @@ export class MemberFormComponent implements OnInit {
         if (maritalStatus === 'married' || maritalStatus === 'divorced') {
           this.onSpouseSelected();
         } else if (maritalStatus === 'widowed') {
-          this.loadDeceasedSpouses();
+          // this.loadDeceasedSpouses();
         }
       }
     });
@@ -279,78 +287,78 @@ export class MemberFormComponent implements OnInit {
     return d.toISOString().split('T')[0];
   }
 
-  loadPotentialSpouses(): void {
-    const gender = this.memberForm.get('gender')?.value;
-    if (!gender) return;
+  // loadPotentialSpouses(): void {
+  //   const gender = this.memberForm.get('gender')?.value;
+  //   if (!gender) return;
     
-    // Get potential spouses of opposite gender
-    const oppositeGender = gender === 'male' ? 'female' : 'male';
+  //   // Get potential spouses of opposite gender
+  //   const oppositeGender = gender === 'male' ? 'female' : 'male';
     
-    // Using the correct method from MemberService
-    this.memberService.getUnmarriedMembersByGender(oppositeGender).subscribe({
-      next: (response) => {
-        // Get the list of potential spouses
-        this.potentialSpouses = response.data || [];
+  //   // Using the correct method from MemberService
+  //   this.memberService.getUnmarriedMembersByGender(oppositeGender).subscribe({
+  //     next: (response) => {
+  //       // Get the list of potential spouses
+  //       this.potentialSpouses = response.data || [];
         
-        // If the member already has a spouse, add that spouse to the list to allow keeping the same spouse
-        if (this.mode === 'edit' && this.member?.spouse_id) {
-          this.memberService.getMember(this.member.spouse_id).subscribe({
-            next: (spouseResponse) => {
-              if (spouseResponse.data) {
-                // Check if the spouse is already in the list (shouldn't be, but just in case)
-                const existingSpouse = this.potentialSpouses.find(s => s.id === spouseResponse.data.id);
-                if (!existingSpouse) {
-                  this.potentialSpouses.unshift(spouseResponse.data);
-                }
-              }
-            },
-            error: (error) => {
-              console.error('Error loading existing spouse:', error);
-              this.errorMessage = 'Failed to load existing spouse information.';
-            }
-          });
-        }
-      },
-      error: (error) => {
-        console.error('Error loading potential spouses:', error);
-        this.errorMessage = 'Failed to load potential spouses. Please try again.';
-      }
-    });
-  }
+  //       // If the member already has a spouse, add that spouse to the list to allow keeping the same spouse
+  //       if (this.mode === 'edit' && this.member?.spouse_id) {
+  //         this.memberService.getMember(this.member.spouse_id).subscribe({
+  //           next: (spouseResponse) => {
+  //             if (spouseResponse.data) {
+  //               // Check if the spouse is already in the list (shouldn't be, but just in case)
+  //               const existingSpouse = this.potentialSpouses.find(s => s.id === spouseResponse.data.id);
+  //               if (!existingSpouse) {
+  //                 this.potentialSpouses.unshift(spouseResponse.data);
+  //               }
+  //             }
+  //           },
+  //           error: (error) => {
+  //             console.error('Error loading existing spouse:', error);
+  //             this.errorMessage = 'Failed to load existing spouse information.';
+  //           }
+  //         });
+  //       }
+  //     },
+  //     error: (error) => {
+  //       console.error('Error loading potential spouses:', error);
+  //       this.errorMessage = 'Failed to load potential spouses. Please try again.';
+  //     }
+  //   });
+  // }
 
-  loadDeceasedSpouses(): void {
-    const gender = this.memberForm.get('gender')?.value;
-    if (!gender) return;
+  // loadDeceasedSpouses(): void {
+  //   const gender = this.memberForm.get('gender')?.value;
+  //   if (!gender) return;
     
-    // Get deceased spouses of opposite gender
-    const oppositeGender = gender === 'male' ? 'female' : 'male';
-    this.memberService.getDeceasedMembersByGender(oppositeGender).subscribe({
-      next: (response) => {
-        this.deceasedSpouses = response.data || [];
+  //   // Get deceased spouses of opposite gender
+  //   const oppositeGender = gender === 'male' ? 'female' : 'male';
+  //   this.memberService.getDeceasedMembersByGender(oppositeGender).subscribe({
+  //     next: (response) => {
+  //       this.deceasedSpouses = response.data || [];
         
-        // If the member already has a deceased spouse, add it to the list
-        if (this.mode === 'edit' && this.member?.deceased_spouse_id) {
-          this.memberService.getMember(this.member.deceased_spouse_id).subscribe({
-            next: (spouseResponse) => {
-              if (spouseResponse.data) {
-                const existingDeceased = this.deceasedSpouses.find(s => s.id === spouseResponse.data.id);
-                if (!existingDeceased) {
-                  this.deceasedSpouses.unshift(spouseResponse.data);
-                }
-              }
-            },
-            error: (error) => {
-              console.error('Error loading existing deceased spouse:', error);
-            }
-          });
-        }
-      },
-      error: (error) => {
-        console.error('Error loading deceased spouses:', error);
-        this.errorMessage = 'Failed to load deceased spouses. Please try again.';
-      }
-    });
-  }
+  //       // If the member already has a deceased spouse, add it to the list
+  //       if (this.mode === 'edit' && this.member?.deceased_spouse_id) {
+  //         this.memberService.getMember(this.member.deceased_spouse_id).subscribe({
+  //           next: (spouseResponse) => {
+  //             if (spouseResponse.data) {
+  //               const existingDeceased = this.deceasedSpouses.find(s => s.id === spouseResponse.data.id);
+  //               if (!existingDeceased) {
+  //                 this.deceasedSpouses.unshift(spouseResponse.data);
+  //               }
+  //             }
+  //           },
+  //           error: (error) => {
+  //             console.error('Error loading existing deceased spouse:', error);
+  //           }
+  //         });
+  //       }
+  //     },
+  //     error: (error) => {
+  //       console.error('Error loading deceased spouses:', error);
+  //       this.errorMessage = 'Failed to load deceased spouses. Please try again.';
+  //     }
+  //   });
+  // }
 
   onImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -385,7 +393,30 @@ export class MemberFormComponent implements OnInit {
     this.formSubmitting = true;
     this.errorMessage = '';
     
+    // Get the form values from the main form
     const formValues = this.memberForm.value;
+    
+    // Make sure to get the marital status from the FormArray if it exists
+    if (this.maritalStatuses.length > 0) {
+      const firstMaritalStatus = this.maritalStatuses.at(0).value;
+      formValues.marital_status = firstMaritalStatus.maritalStatus;
+      
+      // If there's a spouse selected in the first marital status, use that
+      if (firstMaritalStatus.spouse_id) {
+        formValues.spouse_id = firstMaritalStatus.spouse_id;
+      }
+      
+      // Use the marriage date from the marital status if available
+      if (firstMaritalStatus.marriage_date) {
+        formValues.marriage_date = firstMaritalStatus.marriage_date;
+      }
+      
+      // Use the divorce date from the marital status if available
+      if (firstMaritalStatus.divorce_date) {
+        formValues.divorce_date = firstMaritalStatus.divorce_date;
+      }
+    }
+    
     const spouseId = formValues.spouse_id;
     const maritalStatus = formValues.marital_status?.toLowerCase();
     
@@ -394,7 +425,61 @@ export class MemberFormComponent implements OnInit {
     } else {
       this.updateMember(formValues, spouseId, maritalStatus);
     }
+  
+    const maritalStatusesData = formValues.maritalStatuses.map((status: any) => {
+      // Format dates
+      if (status.marriage_date) {
+        status.marriage_date = new Date(status.marriage_date).toISOString().split('T')[0];
+      }
+      if (status.divorce_date) {
+        status.divorce_date = new Date(status.divorce_date).toISOString().split('T')[0];
+      }
+      
+      return status;
+    });
+  
+    if (this.mode === 'add' && maritalStatusesData.length > 1) {
+      // Start from index 1 (second marriage) since the first one is handled by main form
+      for (let i = 1; i < maritalStatusesData.length; i++) {
+        const marriageStatus = maritalStatusesData[i];
+        
+        if (marriageStatus.maritalStatus === 'Married' && marriageStatus.spouse_id) {
+          const gender = formValues.gender;
+          const husbandId = gender === 'male' ? formValues.id || null : marriageStatus.spouse_id;
+          const wifeId = gender === 'female' ? formValues.id || null : marriageStatus.spouse_id;
+          
+          // Create additional marriage
+          if (husbandId && wifeId) {
+            const marriageDate = marriageStatus.marriage_date || new Date().toISOString().split('T')[0];
+            this.createAdditionalMarriage(husbandId, wifeId, marriageDate, formValues.id || null);
+          }
+        }
+      }
+    }
+    
+    console.log('Marital statuses data:', maritalStatusesData);
   }
+
+  private createAdditionalMarriage(husbandId: number, wifeId: number, marriageDate: string, requestedBy: number | null): void {
+    if (!requestedBy) return;
+    
+    const marriageData: MarriageData = {
+      husband_id: husbandId,
+      wife_id: wifeId,
+      marriage_date: new Date(marriageDate),
+      requested_by: requestedBy
+    };
+    
+    this.memberService.createMarriageRequest(marriageData).subscribe({
+      next: (response) => {
+        console.log('Additional marriage created successfully', response);
+      },
+      error: (error) => {
+        console.error('Error creating additional marriage:', error);
+      }
+    });
+  }
+
 
   private addMember(formValues: any, spouseId: number | null, maritalStatus: string): void {
     // Ensure proper date formatting for creation
@@ -651,12 +736,32 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
   }
 
   createMarriage(husbandId: number, wifeId: number, marriageDate: string, requestedBy: number): void {
-    const marriageData: MarriageData = {
-      husband_id: husbandId,
-      wife_id: wifeId,
-      marriage_date: new Date(marriageDate),
-      requested_by: requestedBy
-    };
+    const maritalStatuses = this.memberForm.get('maritalStatuses')?.value || [];
+    const gender = this.memberForm.get('gender')?.value;
+
+    // Check for multiple spouses
+    let validMarriageCount = 1;
+    const additionalMarriages = [];
+
+    // Process additional marriages from marital statuses
+    for (let i = 1; i < maritalStatuses.length; i++) {
+      const status = maritalStatuses[i];
+      if (status.maritalStatus === 'Married' && status.spouse_id) {
+        validMarriageCount++;
+        additionalMarriages.push({
+          spouse_id: status.spouse_id,
+          marriage_date: status.marriage_date ? new Date(status.marriage_date).toISOString().split('T')[0] : marriageDate
+        });
+      }
+    }
+    
+    if (validMarriageCount === 1) {
+      const marriageData: MarriageData = {
+        husband_id: husbandId,
+        wife_id: wifeId,
+        marriage_date: new Date(marriageDate),
+        requested_by: requestedBy
+      };
     
     this.memberService.createMarriageRequest(marriageData).subscribe({
       next: (response) => {
@@ -673,6 +778,38 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
       }
     });
   }
+  else if (validMarriageCount > 1) {
+    const marriages = [
+      {
+        spouse_id: gender === 'male' ? wifeId : husbandId,
+        marriage_date: marriageDate
+      },
+      ...additionalMarriages
+    ];
+
+    // Create multiple marriages in a single request
+    const data = {
+      marriages,
+      member_id: requestedBy,
+      gender
+    };
+
+    this.memberService.createMultipleMarriage(data).subscribe({
+      next: (response) => {
+        this.memberSaved.emit(response.data);
+        this.resetForm();
+      },
+      error: (error) => {
+        console.error('Error creating multiple marriage relationships:', error);
+        
+        this.errorMessage = 'Member information updated, but marriage details could not be modified.';
+        this.memberSaved.emit(this.member);
+        this.resetForm();
+        this.formSubmitting = false;
+      }
+    });
+  }
+}
   
   createDivorceForNewMarriage(husbandId: number, wifeId: number, marriageDate: string, divorceDate: string, requestedBy: number): void {
     const divorceData = {
@@ -734,7 +871,12 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
     this.isVisible = false;
     this.spouseSearchControl.setValue('');
     this.selectedSpouseName = '';
-    this.showDropdown = false;
+    this.showDropdown = this.showDropdown.map(() => false);
+
+    while (this.maritalStatuses.length > 0) {
+      this.maritalStatuses.removeAt(0);
+    }
+    this.addMaritalStatus();
   }
 
   onCancel(): void {
@@ -786,6 +928,146 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
     return this.mode === 'add' ? 'Add Member' : 'Update Member';
   }
 
+  get maritalStatuses(): FormArray {
+    return this.memberForm.get('maritalStatuses') as FormArray;
+  }
+
+  createMaritalStatusGroup(): FormGroup {
+    return this.fb.group({
+      maritalStatus: ['Single', Validators.required],
+      spouse_id: [null],
+      spouseName: [''],
+      marriage_date: [null],
+      divorce_date: [null]
+    });
+  }
+
+  addMaritalStatus(): void {
+    // Check if there are existing marital statuses
+    const lastIndex = this.maritalStatuses.length - 1;
+    
+    if (lastIndex >= 0) {
+      const lastStatus = this.maritalStatuses.at(lastIndex).get('maritalStatus')?.value;
+      
+      if (lastStatus === 'Single') {
+        // Show alert and prevent adding more marital statuses for single
+        alert('Cannot add more marital status when single.');
+        return;
+      }
+      
+      // Create form group with non-single default for additional marital statuses
+      const newGroup = this.fb.group({
+        maritalStatus: ['Married', Validators.required], // Default to married instead of single
+        spouse_id: [null],
+        spouseName: [''],
+        marriage_date: [null],
+        divorce_date: [null]
+      });
+      
+      this.maritalStatuses.push(newGroup);
+
+      this.showDropdown[this.maritalStatuses.length - 1] = false;
+      
+      // Load potential spouses for the new marital status
+      setTimeout(() => {
+        this.onMaritalStatusChange(this.maritalStatuses.length - 1);
+      }, 0);
+    } else {
+      // First marital status can be single
+      this.maritalStatuses.push(this.createMaritalStatusGroup());
+      this.showDropdown[0] = false;
+    }
+  }
+
+  removeMaritalStatus(index: number): void {
+    // Don't allow removing the last remaining marital status entry
+    if (this.maritalStatuses.length > 1) {
+      this.maritalStatuses.removeAt(index);
+
+      this.showDropdown.splice(index, 1);
+    }
+  }
+
+  // Handle marital status change
+  onMaritalStatusChange(index: number): void {
+    const maritalStatusControl = this.maritalStatuses.at(index);
+    const status = maritalStatusControl.get('maritalStatus')?.value;
+    
+    // Reset spouse-related fields
+    maritalStatusControl.patchValue({
+      spouse_id: null,
+      spouseName: '',
+      marriage_date: null,
+      divorce_date: null
+    });
+    
+    // If this is the first status and it's single, allow only one entry
+    if (index === 0 && status === 'Single' && this.maritalStatuses.length > 1) {
+      // Keep only the first entry
+      while (this.maritalStatuses.length > 1) {
+        this.maritalStatuses.removeAt(1);
+      }
+    }
+    
+    // Load potential spouses based on the selected marital status
+    if (status === 'Married' || status === 'Divorced') {
+      this.loadPotentialSpouses(index);
+    } else if (status === 'Widowed') {
+      this.loadDeceasedSpouses(index);
+    }
+  }
+
+  loadPotentialSpouses(index: number): void {
+    const gender = this.memberForm.get('gender')?.value;
+    if (!gender) {
+      this.errorMessage = 'Please select a gender first';
+      return;
+    }
+    
+    // Determine opposite gender
+    const oppositeGender = gender === 'male' ? 'female' : 'male';
+    
+    this.memberService.getMembers(oppositeGender).subscribe({
+      next: (response) => {
+        this.potentialSpouses = response.data || [];
+      },
+      error: (error) => {
+        console.error('Error loading potential spouses:', error);
+      }
+    });
+  }
+
+  loadDeceasedSpouses(index: number): void {
+    const gender = this.memberForm.get('gender')?.value;
+    if (!gender) {
+      this.errorMessage = 'Please select a gender first';
+      return;
+    }
+    
+    // Determine opposite gender
+    const oppositeGender = gender === 'male' ? 'female' : 'male';
+    
+    this.memberService.getDeceasedMembersByGender(oppositeGender).subscribe({
+      next: (response) => {
+        this.deceasedSpouses = response.data || [];
+      },
+      error: (error) => {
+        console.error('Error loading deceased spouses:', error);
+      }
+    });
+  }
+
+  selectSpouse(index: number, spouse: Member): void {
+    const maritalStatusControl = this.maritalStatuses.at(index);
+    
+    maritalStatusControl.patchValue({
+      spouse_id: spouse.id,
+      spouseName: `${spouse.first_name} ${spouse.last_name} (${spouse.mobile_number || ''})`
+    });
+    
+    this.showDropdown[index] = false;
+  }
+
   onSpouseSelected(): void {
     const gender = this.memberForm.get('gender')?.value;
     
@@ -834,39 +1116,56 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
     }
   }
 
-  filterSpouses(): void {
-    this.spouseSearchText = this.spouseSearchControl.value || '';
-    this.showDropdown = true;
+  filterSpouses(index: number): void {
+    const maritalStatusControl = this.maritalStatuses.at(index);
+    const spouseNameControl = maritalStatusControl.get('spouseName');
+    const searchText = spouseNameControl?.value || '';
+
+    this.spouseSearchText = searchText;
+    this.showDropdown[index] = true;
   }
-  
-  selectSpouse(spouse: Member): void {
-    this.memberForm.patchValue({
-      spouse_id: spouse.id
-    });
-    
-    this.selectedSpouseName = `${spouse.first_name} ${spouse.last_name} (${spouse.mobile_number || ''})`;
-    if (this.memberForm.get('marital_status')?.value?.toLowerCase() === 'widowed') {
-      this.selectedSpouseName += ' (deceased)';
-    }
-    
-    this.spouseSearchControl.setValue(this.selectedSpouseName);
-    this.showDropdown = false;
-  }
-  
-  onSpouseInputBlur(): void {
+   
+  onSpouseInputBlur(index: number): void {
     setTimeout(() => {
-      this.showDropdown = false;
+      this.showDropdown[index] = false;
+
+      const maritalStatusControl = this.maritalStatuses.at(index);
+      const spouseNameValue = maritalStatusControl.get('spouseName')?.value;
       
-      if (this.spouseSearchControl.value !== this.selectedSpouseName) {
-        this.memberForm.patchValue({
+      
+      if (spouseNameValue !== this.getSelectedSpouseName(index)) {
+        maritalStatusControl.patchValue({
           spouse_id: null
         });
         
-        if (!this.spouseSearchControl.value) {
-          this.selectedSpouseName = '';
+        if (!spouseNameValue) {
+          maritalStatusControl.patchValue({
+            spouseName: ''
+          });
         }
       }
     }, 200);
+  }
+
+  private getSelectedSpouseName(index: number): string {
+    const maritalStatusControl = this.maritalStatuses.at(index);
+    const spouseId = maritalStatusControl.get('spouse_id')?.value;
+    
+    if (!spouseId) return '';
+    
+    // Find spouse in potential or deceased spouses
+    const status = maritalStatusControl.get('maritalStatus')?.value;
+    const spouseList = status === 'Widowed' ? this.deceasedSpouses : this.potentialSpouses;
+    const spouse = spouseList.find(s => s.id === spouseId);
+    
+    if (!spouse) return '';
+    
+    let displayName = `${spouse.first_name} ${spouse.last_name} (${spouse.mobile_number || ''})`;
+    if (status === 'Widowed') {
+      displayName += ' (deceased)';
+    }
+    
+    return displayName;
   }
   
   // Filtered spouses getters

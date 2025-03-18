@@ -52,7 +52,7 @@ export interface RelationshipResponse {
   data: {
     member: Member;
     relationships: {
-      spouse: Member | null;
+      spouse: Member[];
       divorced_spouses: Member[];
       widowed_spouses: Member[];
       pending_spouses: Member[];

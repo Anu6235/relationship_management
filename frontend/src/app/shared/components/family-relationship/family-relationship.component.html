@@ -107,55 +107,55 @@
 
     <!-- Spouse Section -->
     <div
-      *ngIf="relationshipData.spouse"
+      *ngIf="relationshipData.spouse && relationshipData.spouse.length > 0"
       class="bg-white shadow-md rounded-lg p-6 mb-6"
     >
-      <h3 class="text-lg font-medium text-gray-800 mb-4">Current Spouse</h3>
-      <div class="flex items-center">
-        <div class="avatar-container avatar-medium mr-4">
-          <img
-            *ngIf="relationshipData.spouse.profile_image"
-            [src]="getImageUrl(relationshipData.spouse.profile_image)"
-            class="avatar-image"
-            (error)="handleImageError($event, relationshipData.spouse)"
-            alt="{{ relationshipData.spouse.first_name }} {{
-              relationshipData.spouse.last_name
-            }}"
-          />
-          <div
-            *ngIf="!relationshipData.spouse.profile_image"
-            class="avatar-initials"
-          >
-            {{ relationshipData.spouse.first_name.charAt(0)
-            }}{{ relationshipData.spouse.last_name.charAt(0) }}
+      <h3 class="text-lg font-medium text-gray-800 mb-4">
+        {{
+          relationshipData.spouse.length === 1
+            ? "Current Spouse"
+            : "Current Spouses"
+        }}
+      </h3>
+      <div class="space-y-4">
+        <div
+          *ngFor="let spouse of relationshipData.spouse"
+          class="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-all"
+        >
+          <div class="avatar-container avatar-medium mr-4">
+            <img
+              *ngIf="spouse.profile_image"
+              [src]="getImageUrl(spouse.profile_image)"
+              class="avatar-image"
+              (error)="handleImageError($event, spouse)"
+              alt="{{ spouse.first_name }} {{ spouse.last_name }}"
+            />
+            <div *ngIf="!spouse.profile_image" class="avatar-initials">
+              {{ spouse.first_name.charAt(0) }}{{ spouse.last_name.charAt(0) }}
+            </div>
           </div>
-        </div>
 
-        <div>
-          <h4 class="text-lg font-medium text-gray-800">
-            <a
-              (click)="navigateToMember(relationshipData.spouse.id)"
-              class="text-blue-600 hover:underline cursor-pointer"
-            >
-              {{ relationshipData.spouse.first_name }}
-              {{ relationshipData.spouse.last_name }}
-            </a>
-          </h4>
-          <p class="text-sm text-gray-600">
-            <span
-              [ngClass]="getGenderClass(relationshipData.spouse.gender)"
-              class="px-2 py-1 rounded text-xs font-medium"
-            >
-              {{ toSentenceCase(relationshipData.spouse.gender) }}
-            </span>
-            <span
-              *ngIf="relationshipData.spouse.marriage_date"
-              class="ml-2 text-sm"
-            >
-              Married on:
-              {{ formatDate(relationshipData.spouse.marriage_date) }}
-            </span>
-          </p>
+          <div class="flex-1">
+            <h4 class="text-lg font-medium text-gray-800">
+              <a
+                (click)="navigateToMember(spouse.id)"
+                class="text-blue-600 hover:underline cursor-pointer"
+              >
+                {{ spouse.first_name }} {{ spouse.last_name }}
+              </a>
+            </h4>
+            <p class="text-sm text-gray-600 mt-1">
+              <span
+                [ngClass]="getGenderClass(spouse.gender)"
+                class="px-2 py-1 rounded text-xs font-medium"
+              >
+                {{ toSentenceCase(spouse.gender) }}
+              </span>
+              <span *ngIf="spouse.marriage_date" class="ml-2 text-sm">
+                Married on: {{ formatDate(spouse.marriage_date) }}
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </div>

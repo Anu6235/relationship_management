@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { AppConfigService } from '../../core/services/app-config.service';
 
@@ -18,6 +18,7 @@ interface MenuItem {
   styleUrl: './sidebar.component.css'
 })
 export class SidebarComponent implements OnInit {
+  @Output() shrink = new EventEmitter<boolean>();
   menuItems: MenuItem[] = [
     { category: 'Home', title: 'Dashboard', icon: 'ti ti-layout-dashboard', link: '/dashboard' },
     { category: 'APPS', title: 'Members', icon: 'ti ti-users', link: '/members' },
@@ -58,5 +59,9 @@ export class SidebarComponent implements OnInit {
 
   toggleSidebar() {
     document.querySelector('.left-sidebar')?.classList.toggle('collapse');
+  }
+
+  Shrinksidebar(){
+    this.shrink.emit(false);
   }
 }

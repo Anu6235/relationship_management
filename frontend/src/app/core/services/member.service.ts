@@ -116,6 +116,13 @@ export class MemberService {
 
   // =================== MARRIAGE MANAGEMENT ===================
 
+  // Create multiple marraiges at once
+  createMultipleMarriage(data: { marriages: any[], member_id: number, gender: string}): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/marriages`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Create a marriage request
   createMarriageRequest(marriageData: MarriageData): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/marriage`, marriageData).pipe(
@@ -239,8 +246,10 @@ getPendingDivorceRequests(memberId: number): Observable<any> {
           const relationships = response.data.relationships;
           if (relationships) {
             // Process spouse
-            if (relationships.spouse) {
-              relationships.spouse = this.processImageUrls(relationships.spouse);
+            if (relationships.spouse && Array.isArray(relationships.spouse)) {
+              relationships.spouse = relationships.spouse.map(spouse => 
+                this.processImageUrls(spouse)
+              ) 
             }
             
             // Process divorced spouses
@@ -286,9 +295,23 @@ getPendingDivorceRequests(memberId: number): Observable<any> {
   }
 
 
-  // Get all marriages for a member
+   // Get all marriages for a specific member (new method)
   getMemberMarriages(memberId: number): Observable<any> {
     return this.http.get<any>(`${this.API_URL}/${memberId}/marriages`).pipe(
+      map(response => {
+        // Process image URLs for members in the response
+        if (response.data && response.data.marriages && Array.isArray(response.data.marriages)) {
+          response.data.marriages.forEach((marriage: any) => {
+            if (marriage.husband) {
+              marriage.husband = this.processImageUrls(marriage.husband);
+            }
+            if (marriage.wife) {
+              marriage.wife = this.processImageUrls(marriage.wife);
+            }
+          });
+        }
+        return response;
+      }),
       catchError(this.handleError)
     );
   }

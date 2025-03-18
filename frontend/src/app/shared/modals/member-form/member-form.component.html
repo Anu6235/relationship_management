@@ -183,140 +183,6 @@
               </div>
             </div>
 
-            <!-- Marital Status -->
-            <div class="form-group">
-              <label for="marital_status">Marital Status *</label>
-              <select id="marital_status" formControlName="marital_status">
-                <option value="">Select Marital Status</option>
-                <option
-                  *ngFor="let option of maritalStatusOptions"
-                  [value]="option.value"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
-              <div class="error" *ngIf="isFieldInvalid('marital_status')">
-                {{ getErrorMessage("marital_status") }}
-              </div>
-            </div>
-
-            <!-- Spouse Selection (Conditional) -->
-            <div class="form-group" *ngIf="showSpouseSelection">
-              <label for="spouse_id">Select Spouse</label>
-              <div class="relative w-full">
-                <input
-                  type="text"
-                  placeholder="Type to search and select spouse..."
-                  [formControl]="spouseSearchControl"
-                  (input)="filterSpouses()"
-                  (focus)="showDropdown = true"
-                  (blur)="onSpouseInputBlur()"
-                />
-
-                <div
-                  class="absolute left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-50"
-                  [class.hidden]="!showDropdown"
-                >
-                  <!-- Non-widowed Status -->
-                  <ng-container
-                    *ngIf="
-                      memberForm.get('marital_status')?.value?.toLowerCase() !==
-                      'widowed'
-                    "
-                  >
-                    <div
-                      *ngFor="let spouse of filteredPotentialSpouses"
-                      class="p-2 hover:bg-gray-100 cursor-pointer"
-                      (mousedown)="selectSpouse(spouse)"
-                    >
-                      {{ spouse.first_name }} {{ spouse.last_name }} ({{
-                        spouse.mobile_number || ""
-                      }})
-                    </div>
-                    <div
-                      *ngIf="filteredPotentialSpouses.length === 0"
-                      class="p-2 text-gray-500"
-                    >
-                      No spouses found
-                    </div>
-                  </ng-container>
-
-                  <!-- Widowed Status -->
-                  <ng-container
-                    *ngIf="
-                      memberForm.get('marital_status')?.value?.toLowerCase() ===
-                      'widowed'
-                    "
-                  >
-                    <div
-                      *ngFor="let spouse of filteredDeceasedSpouses"
-                      class="p-2 hover:bg-gray-100 cursor-pointer"
-                      (mousedown)="selectSpouse(spouse)"
-                    >
-                      {{ spouse.first_name }} {{ spouse.last_name }} ({{
-                        spouse.mobile_number || ""
-                      }}) (deceased)
-                    </div>
-                    <div
-                      *ngIf="filteredDeceasedSpouses.length === 0"
-                      class="p-2 text-gray-500"
-                    >
-                      No deceased spouses found
-                    </div>
-                  </ng-container>
-                </div>
-              </div>
-
-              <div
-                *ngIf="isFieldInvalid('spouse_id')"
-                class="text-red-500 text-sm mt-1"
-              >
-                Spouse selection is required
-              </div>
-            </div>
-
-            <!-- Marriage Date (Conditional) -->
-            <div *ngIf="showMarriageDatePicker" class="form-group">
-              <label for="marriage_date">Marriage Date *</label>
-              <input
-                type="date"
-                id="marriage_date"
-                formControlName="marriage_date"
-                class="form-control"
-                [class.is-invalid]="isFieldInvalid('marriage_date')"
-              />
-              <div
-                *ngIf="isFieldInvalid('marriage_date')"
-                class="invalid-feedback"
-              >
-                Marriage date is required
-              </div>
-            </div>
-
-            <!-- Divorce Date (Conditional) -->
-            <div
-              *ngIf="
-                memberForm.get('marital_status')?.value?.toLowerCase() ===
-                'divorced'
-              "
-              class="form-group"
-            >
-              <label for="divorce_date">Divorce Date *</label>
-              <input
-                type="date"
-                id="divorce_date"
-                formControlName="divorce_date"
-                class="form-control"
-                [class.is-invalid]="isFieldInvalid('divorce_date')"
-              />
-              <div
-                *ngIf="isFieldInvalid('divorce_date')"
-                class="invalid-feedback"
-              >
-                Divorce date is required
-              </div>
-            </div>
-
             <!-- Deceased -->
             <div class="form-group">
               <label>Deceased</label>
@@ -324,6 +190,147 @@
                 <option value="false" selected>No</option>
                 <option value="true">Yes</option>
               </select>
+            </div>
+          </div>
+
+          <!-- Marital Status -->
+          <div class="form-group mt-4">
+            <div class="flex justify-between items-center mb-2">
+              <label class="font-semibold">Marital Status</label>
+              <button
+                type="button"
+                class="btn-secondary-sm"
+                (click)="addMaritalStatus()"
+              >
+                Add Marital Status
+              </button>
+            </div>
+
+            <div formArrayName="maritalStatuses">
+              <div
+                *ngFor="let status of maritalStatuses.controls; let i = index"
+                [formGroupName]="i"
+                class="bg-gray-50 p-3 mb-2 rounded-lg"
+              >
+                <div class="flex justify-between items-center">
+                  <h4 class="font-medium">Status {{ i + 1 }}</h4>
+                  <button
+                    type="button"
+                    class="text-red-500"
+                    (click)="removeMaritalStatus(i)"
+                    *ngIf="maritalStatuses.length > 1"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  <div class="form-group">
+                    <label [for]="'maritalStatus' + i">Marital Status *</label>
+                    <select
+                      [id]="'maritalStatus' + i"
+                      formControlName="maritalStatus"
+                      (change)="onMaritalStatusChange(i)"
+                    >
+                      <!-- Use regular options for first entry, non-Single options for others -->
+                      <option
+                        *ngFor="
+                          let option of i === 0
+                            ? maritalStatusOptions
+                            : nonSingleMaritalStatusOptions
+                        "
+                        [value]="option.value"
+                      >
+                        {{ option.label }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div
+                    class="form-group"
+                    *ngIf="status.get('maritalStatus')?.value !== 'Single'"
+                  >
+                    <label [for]="'spouse' + i">Spouse</label>
+                    <input
+                      [id]="'spouse' + i"
+                      type="text"
+                      formControlName="spouseName"
+                      placeholder="Search for spouse..."
+                      (focus)="showDropdown[i] = true"
+                      readonly
+                    />
+                    <div
+                      *ngIf="showDropdown[i]"
+                      class="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto"
+                    >
+                      <ng-container
+                        *ngIf="status.get('maritalStatus')?.value !== 'Widowed'"
+                      >
+                        <div
+                          *ngFor="let spouse of potentialSpouses"
+                          class="p-2 hover:bg-gray-100 cursor-pointer"
+                          (click)="selectSpouse(i, spouse)"
+                        >
+                          {{ spouse.first_name }} {{ spouse.last_name }} ({{
+                            spouse.mobile_number || ""
+                          }})
+                        </div>
+                        <div
+                          *ngIf="potentialSpouses.length === 0"
+                          class="p-2 text-gray-500"
+                        >
+                          No spouses found
+                        </div>
+                      </ng-container>
+                      <ng-container
+                        *ngIf="status.get('maritalStatus')?.value === 'Widowed'"
+                      >
+                        <div
+                          *ngFor="let spouse of deceasedSpouses"
+                          class="p-2 hover:bg-gray-100 cursor-pointer"
+                          (click)="selectSpouse(i, spouse)"
+                        >
+                          {{ spouse.first_name }} {{ spouse.last_name }} ({{
+                            spouse.mobile_number || ""
+                          }}) (deceased)
+                        </div>
+                        <div
+                          *ngIf="deceasedSpouses.length === 0"
+                          class="p-2 text-gray-500"
+                        >
+                          No deceased spouses found
+                        </div>
+                      </ng-container>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Marriage date field - only show for Married or Divorced or Widowed -->
+                <div
+                  class="form-group mt-3"
+                  *ngIf="status.get('maritalStatus')?.value !== 'Single'"
+                >
+                  <label [for]="'marriageDate' + i">Marriage Date</label>
+                  <input
+                    [id]="'marriageDate' + i"
+                    type="date"
+                    formControlName="marriage_date"
+                  />
+                </div>
+
+                <!-- Divorce date field - only show for Divorced status -->
+                <div
+                  class="form-group mt-3"
+                  *ngIf="status.get('maritalStatus')?.value === 'Divorced'"
+                >
+                  <label [for]="'divorceDate' + i">Divorce Date</label>
+                  <input
+                    [id]="'divorceDate' + i"
+                    type="date"
+                    formControlName="divorce_date"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

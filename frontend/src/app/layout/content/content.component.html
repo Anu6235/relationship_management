@@ -2,15 +2,16 @@
   class="page-wrapper"
   id="main-wrapper"
   data-layout="vertical"
+  [class.show-sidebar]="isSidebarExpanded"
   data-navbarbg="skin6"
   data-sidebartype="full"
   data-sidebar-position="fixed"
   data-header-position="fixed"
 >
-  <app-sidebar />
+  <app-sidebar (shrink)="expandside($event)" />
 
   <div class="body-wrapper">
-    <app-header />
+    <app-header (expand)="expandside($event)" />
 
     <div class="container-fluid">
       <router-outlet />
