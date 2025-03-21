@@ -444,7 +444,7 @@ exports.getWife = async (req, res) => {
     }
   };
 
-// New helper to create parent-child relationships
+// Create parent-child relationships
 exports.createParentChildRelationships = async (parentTableId, fatherId, motherId, childId, transaction) => {
   try {
     // Create a record that links the child to both parents
@@ -464,7 +464,7 @@ exports.createParentChildRelationships = async (parentTableId, fatherId, motherI
   }
 };
 
-// New method to get a member's parents
+// Get member's parents
 exports.getMemberParents = async (req, res) => {
   try {
     const childId = parseInt(req.params.id);
@@ -523,7 +523,7 @@ exports.getMemberParents = async (req, res) => {
   }
 };
 
-// New method to get a member's children
+// Get member's children
 exports.getMemberChildren = async (req, res) => {
   try {
     const parentId = parseInt(req.params.id);

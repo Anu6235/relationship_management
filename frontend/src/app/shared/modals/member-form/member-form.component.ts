@@ -3,7 +3,7 @@ import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Fo
 import { HttpErrorResponse } from '@angular/common/http';
 import { MemberService } from '../../../core/services/member.service';
 import { CommonModule } from '@angular/common';
-import { Member, MarriageData, DeathData, WidowedData } from '../../../core/models/member';
+import { Member, MarriageData, DeathData, WidowedData, ParentChildRelationshipData } from '../../../core/models/member';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -70,6 +70,13 @@ export class MemberFormComponent implements OnInit {
   selectedSpouseName = '';
   showDeathDateField: boolean = false;
   private subscriptions: Subscription[] = [];
+  parentRelationships: {
+    id: number;
+    name: string;
+    status: 'confirmed' | 'divorced' | 'widowed';
+    husband_id: number | null;
+    wife_id: number | null;
+  }[] = [];
 
 
   genderOptions = [
@@ -89,8 +96,23 @@ export class MemberFormComponent implements OnInit {
     { value: 'Widowed', label: 'Widowed' }
   ];
 
+  relationshipTypeOptions = [
+    { value: 'biological', label: 'Biological' },
+    { value: 'adopted', label: 'Adopted' },
+    { value: 'step', label: 'Step' }
+  ];
+
   get nonSingleMaritalStatusOptions() {
     return this.maritalStatusOptions.filter(option => option.value !== 'Single');
+  }
+
+  get isParentSelected(): boolean {
+    return !!this.memberForm.get('parents')?.value;
+  }
+
+  getParentDisplayName(parent: { id: number; name: string; status: 'confirmed' | 'divorced' | 'widowed' }): string {
+    const displayStatus = parent.status === 'confirmed' ? 'married' : parent.status;
+    return `${parent.name} (${displayStatus})`; 
   }
 
   constructor(
@@ -114,7 +136,8 @@ export class MemberFormComponent implements OnInit {
       deceased: [false],
       death_date: [null],
       spouse_id: [null],
-      parents: [null],
+      parents: [''],
+      relationship_type: ['biological'],
       marriage_date: [null],
       divorce_date: [null],
       deceased_spouse_id: [null],
@@ -236,7 +259,10 @@ export class MemberFormComponent implements OnInit {
         console.log(res,'res')
         this.parent_data = res?.data
       })
-    })
+    });
+
+    this.loadParentRelationships();
+
     setTimeout(() => {
       this.patchFormValues();
     }, 1000);
@@ -265,6 +291,13 @@ export class MemberFormComponent implements OnInit {
       }
 
       const isDeceased = this.member.deceased ? true : false;
+
+      let parentId: string | number = '';
+      if (this.member.parent_id) {
+        parentId = Array.isArray(this.member.parent_id)
+          ? this.member.parent_id[0] 
+          : this.member.parent_id;  
+      }
   
       const formValues = {
         ...this.member,
@@ -276,6 +309,8 @@ export class MemberFormComponent implements OnInit {
         status: status_dict[this.member.status],
         marital_status: maritalStatusOption ? maritalStatusOption.value : '',
         spouse_id: this.wife || null,
+        parents: parentId,
+        relationship_type: this.member.relationship_type || 'biological',
         marriage_date: this.parent_data?.marriage_date ? this.formatDateForInput(this.parent_data?.marriage_date) : null,
         divorce_date: this.member.divorce_date ? this.formatDateForInput(this.member.divorce_date) : null,
         deceased_spouse_id: this.member.deceased_spouse_id || null
@@ -526,8 +561,8 @@ export class MemberFormComponent implements OnInit {
     this.memberService.createMember(formValues, this.selectedImage).subscribe({
       next: (response) => {
         const newMemberId = response.data.id;
-        
-        // Now process all marital statuses
+
+        this.createParentChildRelationship(newMemberId);
         this.processMaritalStatuses(newMemberId);
       },
       error: (error) => {
@@ -548,7 +583,7 @@ export class MemberFormComponent implements OnInit {
       return;
     }
   
-    const memberId = this.member.id; // Store this.member.id in a local variable
+    const memberId = this.member.id; 
   
     // Format dates properly
     const updatedMember = {
@@ -573,6 +608,9 @@ export class MemberFormComponent implements OnInit {
           this.handleDeceasedMember(memberId, updatedMember.death_date);
         }
         
+        // Create parent-child relationship
+        this.createParentChildRelationship(memberId);
+
         // After updating the member, process all marital statuses
         this.processMaritalStatuses(memberId);
       },
@@ -793,6 +831,30 @@ export class MemberFormComponent implements OnInit {
     
     // Use the hybrid method
     this.createMaritalRelationships(requestedBy);
+  }
+
+  createParentChildRelationship(memberId: number): void {
+    const parentId = this.memberForm.get('parents')?.value;
+    const relationshipType = this.memberForm.get('relationship_type')?.value;
+  
+    if (parentId) {
+      const relationshipData: ParentChildRelationshipData = {
+        parent_table_id: Number(parentId),
+        child_id: memberId,
+        relationship_type: relationshipType,
+        requested_by: memberId
+      };
+  
+      this.memberService.createParentChildRelationship(relationshipData).subscribe({
+        next: (response) => {
+          console.log('Parent-child relationship created successfully:', response);
+        },
+        error: (error) => {
+          console.error('Error creating parent-child relationship:', error);
+          this.errorMessage = 'Member saved, but failed to create parent-child relationship: ' + error.message;
+        }
+      });
+    }
   }
 
   private handleDeceasedMember(memberId: number, deathDate: Date): void {
@@ -1091,7 +1153,43 @@ export class MemberFormComponent implements OnInit {
       }
     });
   }
+
+  loadParentRelationships(): void {
+    this.memberService.getAllParentRelationships().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.parentRelationships = response.data;
+          console.log('Parent Relationships:', this.parentRelationships);
   
+          // If in edit mode and member has a parent_id, set the initial value
+          if (this.mode === 'edit' && this.member?.parent_id) {
+            const parentId = Array.isArray(this.member.parent_id)
+              ? this.member.parent_id[0] 
+              : this.member.parent_id;  
+            this.memberForm.patchValue({
+              parents: parentId
+            });
+          }
+        } else {
+          this.parentRelationships = [];
+          console.log('No parent relationships returned from API');
+        }
+      },
+      error: (error) => {
+        console.error('Error loading parent relationships:', error);
+        this.errorMessage = 'Failed to load parent relationships';
+      }
+    });
+  }
+    
+  selectParent(event: Event): void {
+    const target = event.target as HTMLSelectElement; 
+    const parentId = target.value; 
+    this.memberForm.patchValue({
+      parents: parentId ? Number(parentId) : ''
+    });
+  }
+
   selectSpouse(index: number, spouse: Member): void {
     const maritalStatusControl = this.maritalStatuses.at(index);
     

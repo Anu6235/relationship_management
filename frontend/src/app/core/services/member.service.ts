@@ -30,7 +30,7 @@ export class MemberService {
   getMembers(gender?: string): Observable<MemberResponse> {
     let url = this.API_URL;
     if (gender) {
-      url += `?gender=${gender}`; // Append query parameter if gender is provided
+      url += `?gender=${gender}`; 
     }
 
     return this.http.get<MemberResponse>(url).pipe(

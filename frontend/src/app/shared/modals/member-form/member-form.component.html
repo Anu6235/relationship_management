@@ -183,12 +183,37 @@
               </div>
             </div>
 
-            <!-- parents -->
+            <!-- Parents -->
             <div class="form-group">
-              <label>Parents</label>
-              <select formControlName="parents">
-                <option value="false" selected>No</option>
-                <option value="true">Yes</option>
+              <label for="parents">Parents</label>
+              <select
+                id="parents"
+                formControlName="parents"
+                (change)="selectParent($event)"
+              >
+                <option value="">Select Parents</option>
+                <option
+                  *ngFor="let parent of parentRelationships"
+                  [value]="parent.id"
+                >
+                  {{ getParentDisplayName(parent) }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Relationship Type (shown only if a parent is selected) -->
+            <div class="form-group" *ngIf="isParentSelected">
+              <label for="relationship_type">Relationship Type</label>
+              <select
+                id="relationship_type"
+                formControlName="relationship_type"
+              >
+                <option
+                  *ngFor="let option of relationshipTypeOptions"
+                  [value]="option.value"
+                >
+                  {{ option.label }}
+                </option>
               </select>
             </div>
 
