@@ -3,12 +3,13 @@ import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, catchError, Observable, tap, throwError } from 'rxjs';
 import { UserResponse, User, LoginRequest, LoginResponse } from '../models/auth';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:5000/api';
+  private readonly API_URL = environment.API_URL;
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   private http = inject(HttpClient);

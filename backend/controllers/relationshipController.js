@@ -1,4 +1,4 @@
-const { Member, sequelize, ParentTable } = require('../models');
+const { Member, sequelize, ParentTable, MemberParentTable } = require('../models');
 const { Op } = require('sequelize');
 
 exports.getMemberRelationships = async (req, res) => {
@@ -69,7 +69,7 @@ exports.getMemberRelationships = async (req, res) => {
       }
     }
 
-    // 1.5 PENDING DIVORCE RELATIONSHIPS
+    // 2. PENDING DIVORCE RELATIONSHIPS
     const pendingDivorces = [];
 
     const pendingDivorceRequests = await ParentTable.findAll({
@@ -104,8 +104,43 @@ exports.getMemberRelationships = async (req, res) => {
       
       pendingDivorces.push(spouse);
     }
+
+     // 3. PENDING WIDOWED RELATIONSHIPS
+     const pendingWidowed = [];
+
+     const pendingWidowedRequests = await ParentTable.findAll({
+       where: {
+         [Op.or]: [
+           { husband_id: memberId },
+           { wife_id: memberId }
+         ],
+         status: 'pending widowed'
+       },
+       attributes: ['id', 'husband_id', 'wife_id', 'status', 'createdAt', 'requested_by'],
+       include: [
+         { model: Member, as: 'husband', attributes: ['id', 'first_name', 'last_name', 'profile_image', 'marital_status', 'gender'] },
+         { model: Member, as: 'wife', attributes: ['id', 'first_name', 'last_name', 'profile_image', 'marital_status', 'gender'] }
+       ]
+     });
+ 
+     // Format pending widowed requests
+     for (const request of pendingWidowedRequests) {
+       const isRequester = request.requested_by === memberId;
+       const spouseId = request.husband_id === memberId ? request.wife_id : request.husband_id;
+       const spouse = request.husband_id === memberId ? request.wife : request.husband;
+       
+       if (!spouse) continue;
+       
+       spouse.dataValues.request_id = request.id;
+       spouse.dataValues.is_outgoing = isRequester;
+       spouse.dataValues.created_at = request.createdAt;
+       spouse.dataValues.marriage_date = request.marriage_date;
+       spouse.dataValues.relationship_status = 'pending widowed';
+       
+       pendingWidowed.push(spouse);
+     }
     
-    // 2. PENDING SPOUSE RELATIONSHIPS
+    // 4. PENDING SPOUSE RELATIONSHIPS
     
     const pendingMarriageRequests = await ParentTable.findAll({
       where: {
@@ -129,9 +164,7 @@ exports.getMemberRelationships = async (req, res) => {
       
       if (!potentialSpouse) return null;
       
-      potentialSpouse.dataValues.request_id = request.id;
-      console.log("id is :",request.id);
-      
+      potentialSpouse.dataValues.request_id = request.id;    
       potentialSpouse.dataValues.is_outgoing = isRequester;
       potentialSpouse.dataValues.created_at = request.createdAt;
       potentialSpouse.dataValues.relationship_status = 'pending';
@@ -139,164 +172,79 @@ exports.getMemberRelationships = async (req, res) => {
       return potentialSpouse;
     }).filter(Boolean);
 
-    // 3. CHILDREN RELATIONSHIPS
-    // Instead of using a non-existing table, we'll derive child relationships from the ParentTable
+    // 5. CHILDREN RELATIONSHIPS
+    // Now use the MemberParentTable directly
     const childrenData = [];
     
-    // Check if MemberParentTable exists
-    let memberParentTableExists = false;
-    try {
-      await sequelize.query('SELECT 1 FROM member_parent_table LIMIT 1');
-      memberParentTableExists = true;
-    } catch (e) {
-      // Table doesn't exist
+    // Find children where the member is either father or mother
+    const children = await MemberParentTable.findAll({
+      where: {
+        [Op.or]: [
+          { father_id: memberId },
+          { mother_id: memberId }
+        ]
+      },
+      include: [
+        {
+          model: Member,
+          as: 'child',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
+        }
+      ]
+    });
+    
+    // Format child data
+    for (const relationship of children) {
+      if (!relationship.child) continue;
+      
+      const child = relationship.child;
+      child.dataValues.relationship_status = relationship.status;
+      child.dataValues.relationship_type = relationship.relationship_type;
+      child.dataValues.parent_role = relationship.father_id === memberId ? 'father' : 'mother';
+      
+      childrenData.push(child);
     }
     
-    if (memberParentTableExists) {
-      // If the table exists, use it
-      const children = await sequelize.query(`
-        SELECT m.id, m.first_name, m.last_name, m.profile_image, m.gender, 
-               m.dob, m.deceased, m.marital_status, mpt.status as relationship_status,
-               IFNULL(mpt.relationship_type, 'biological') as relationship_type
-        FROM members m
-        JOIN member_parent_table mpt ON m.id = mpt.child_id
-        WHERE mpt.parent_id = :memberId
-      `, {
-        replacements: { memberId },
-        type: sequelize.QueryTypes.SELECT
-      });
-      
-      childrenData.push(...children);
-    } else {
-      // Derive children from ParentTable
-      // This is a temporary solution until MemberParentTable exists
-      
-      // For male members, find children through marriages
-      if (member.gender === 'male') {
-        const husbandMarriages = await ParentTable.findAll({
-          where: { 
-            husband_id: memberId,
-            status: 'confirmed'
-          },
-          include: [{
-            model: Member,
-            as: 'wife',
-            attributes: ['id']
-          }]
-        });
-        
-        // Find children who have marriages with their mothers
-        for (const marriage of husbandMarriages) {
-          if (!marriage.wife) continue;
-          
-          // Assume members who are 18+ years younger than the marriage date are children
-          const potentialChildren = await Member.findAll({
-            where: {
-              dob: {
-                [Op.gte]: sequelize.literal(`DATE_SUB(${marriage.marriage_date ? `'${marriage.marriage_date.toISOString()}'` : 'NOW()'}, INTERVAL 18 YEAR)`)
-              }
-            },
-            attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
-          });
-          
-          // Add to children with derived relationship status
-          for (const child of potentialChildren) {
-            child.dataValues.relationship_status = 'confirmed';
-            child.dataValues.relationship_type = 'biological';
-            childrenData.push(child);
-          }
-        }
-      }
-      
-      // For female members, similar approach
-      if (member.gender === 'female') {
-        const wifeMarriages = await ParentTable.findAll({
-          where: { 
-            wife_id: memberId,
-            status: 'confirmed'
-          },
-          include: [{
-            model: Member,
-            as: 'husband',
-            attributes: ['id']
-          }]
-        });
-        
-        // Similar logic as above
-        for (const marriage of wifeMarriages) {
-          // Similar code as for male members
-          if (!marriage.husband) continue;
-          
-          const potentialChildren = await Member.findAll({
-            where: {
-              dob: {
-                [Op.gte]: sequelize.literal(`DATE_SUB(${marriage.marriage_date ? `'${marriage.marriage_date.toISOString()}'` : 'NOW()'}, INTERVAL 18 YEAR)`)
-              }
-            },
-            attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
-          });
-          
-          for (const child of potentialChildren) {
-            child.dataValues.relationship_status = 'confirmed';
-            child.dataValues.relationship_type = 'biological';
-            childrenData.push(child);
-          }
-        }
-      }
-    }
-    
-    // 4. PARENT RELATIONSHIPS
-    // Similar approach as with children
+    // 6. PARENT RELATIONSHIPS
     const parentsData = [];
     
-    if (memberParentTableExists) {
-      // If the table exists, use it
-      const parents = await sequelize.query(`
-        SELECT m.id, m.first_name, m.last_name, m.profile_image, m.gender, 
-               m.dob, m.deceased, m.marital_status, mpt.status as relationship_status,
-               IFNULL(mpt.relationship_type, 'biological') as relationship_type
-        FROM members m
-        JOIN member_parent_table mpt ON m.id = mpt.parent_id
-        WHERE mpt.child_id = :memberId
-      `, {
-        replacements: { memberId },
-        type: sequelize.QueryTypes.SELECT
-      });
-      
-      parentsData.push(...parents);
-    } else {
-      // Use the parent_id field from members table
-      if (member.parent_id) {
-        const parentIds = member.getParentIds();
-        
-        // Fetch all parent marriages
-        const parentMarriages = await ParentTable.findAll({
-          where: { 
-            id: { [Op.in]: parentIds },
-            status: 'confirmed'
-          },
-          include: [
-            { model: Member, as: 'husband', attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status'] },
-            { model: Member, as: 'wife', attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status'] }
-          ]
-        });
-        
-        // Add both parents from each marriage
-        for (const marriage of parentMarriages) {
-          if (marriage.husband) {
-            const father = marriage.husband;
-            father.dataValues.relationship_status = 'confirmed';
-            father.dataValues.relationship_type = 'biological';
-            parentsData.push(father);
-          }
-          
-          if (marriage.wife) {
-            const mother = marriage.wife;
-            mother.dataValues.relationship_status = 'confirmed';
-            mother.dataValues.relationship_type = 'biological';
-            parentsData.push(mother);
-          }
+    // Find parents where the member is the child
+    const parents = await MemberParentTable.findAll({
+      where: {
+        child_id: memberId
+      },
+      include: [
+        {
+          model: Member,
+          as: 'father',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
+        },
+        {
+          model: Member,
+          as: 'mother',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
         }
+      ]
+    });
+    
+    // Format parent data
+    for (const relationship of parents) {
+      // Add father if exists
+      if (relationship.father) {
+        const father = relationship.father;
+        father.dataValues.relationship_status = relationship.status;
+        father.dataValues.relationship_type = relationship.relationship_type;
+        father.dataValues.parent_role = 'father';
+        parentsData.push(father);
+      }
+      
+      // Add mother if exists
+      if (relationship.mother) {
+        const mother = relationship.mother;
+        mother.dataValues.relationship_status = relationship.status;
+        mother.dataValues.relationship_type = relationship.relationship_type;
+        mother.dataValues.parent_role = 'mother';
+        parentsData.push(mother);
       }
     }
     
@@ -314,6 +262,7 @@ exports.getMemberRelationships = async (req, res) => {
           widowed_spouses: widowedSpouses,
           pending_spouses: pendingSpouses,
           pending_divorces: pendingDivorces,
+          pending_widowed: pendingWidowed, 
           children: childrenData,
           parents: parentsData,
           marriages: marriages.map(marriage => ({
@@ -440,3 +389,189 @@ exports.getWife = async (req, res) => {
       });
     }
   };
+  
+  exports.getAllParentRelationships = async (req, res) => {
+    try {
+      // Fetch all marriages with status confirmed, divorced, or widowed
+      const parentRelationships = await ParentTable.findAll({
+        where: {
+          status: {
+            [Op.in]: ['confirmed', 'divorced', 'widowed']
+          }
+        },
+        attributes: ['id', 'status', 'husband_id', 'wife_id', 'marriage_date', 'divorce_date', 'death_date'],
+        include: [
+          {
+            model: Member,
+            as: 'husband',
+            attributes: ['id', 'first_name', 'last_name']
+          },
+          {
+            model: Member, 
+            as: 'wife',
+            attributes: ['id', 'first_name', 'last_name']
+          }
+        ],
+        order: [['id', 'ASC']]
+      });
+  
+      // Format the data to display husband and wife names
+      const formattedRelationships = parentRelationships.map((relationship) => {
+        const husband = relationship.husband ? relationship.husband.first_name : 'Unknown';
+        const wife = relationship.wife ? relationship.wife.first_name : 'Unknown';
+        
+        return {
+          id: relationship.id,
+          name: `${husband}-${wife}`,
+          status: relationship.status,
+          husband_id: relationship.husband_id,
+          wife_id: relationship.wife_id
+        };
+      });
+  
+      return res.status(200).json({
+        success: true,
+        count: formattedRelationships.length,
+        data: formattedRelationships
+      });
+    } catch (error) {
+      console.error('Error fetching parent relationships:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  };
+
+// New helper to create parent-child relationships
+exports.createParentChildRelationships = async (parentTableId, fatherId, motherId, childId, transaction) => {
+  try {
+    // Create a record that links the child to both parents
+    await MemberParentTable.create({
+      child_id: childId,
+      father_id: fatherId,
+      mother_id: motherId,
+      parent_table_id: parentTableId,
+      status: 'confirmed',
+      relationship_type: 'biological'
+    }, { transaction });
+    
+    return true;
+  } catch (error) {
+    console.error('Error creating parent-child relationship:', error);
+    throw error;
+  }
+};
+
+// New method to get a member's parents
+exports.getMemberParents = async (req, res) => {
+  try {
+    const childId = parseInt(req.params.id);
+    
+    // Find all parent relationships for this child
+    const parentRelationships = await MemberParentTable.findAll({
+      where: { child_id: childId },
+      include: [
+        {
+          model: Member,
+          as: 'father',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'deceased']
+        },
+        {
+          model: Member,
+          as: 'mother',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'deceased']
+        },
+        {
+          model: ParentTable,
+          as: 'parentMarriage',
+          attributes: ['id', 'status', 'marriage_date']
+        }
+      ]
+    });
+    
+    if (!parentRelationships.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'No parent relationships found for this member'
+      });
+    }
+    
+    // Format the response
+    const parents = parentRelationships.map(relationship => ({
+      id: relationship.id,
+      status: relationship.status,
+      relationship_type: relationship.relationship_type,
+      father: relationship.father,
+      mother: relationship.mother,
+      marriage: relationship.parentMarriage,
+    }));
+    
+    return res.json({
+      success: true,
+      data: parents
+    });
+    
+  } catch (error) {
+    console.error('Error fetching member parents:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// New method to get a member's children
+exports.getMemberChildren = async (req, res) => {
+  try {
+    const parentId = parseInt(req.params.id);
+    const member = await Member.findByPk(parentId);
+    
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+    
+    // Find all children relationships based on member's gender
+    const whereClause = member.gender === 'male' 
+      ? { father_id: parentId } 
+      : { mother_id: parentId };
+    
+    const childrenRelationships = await MemberParentTable.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Member,
+          as: 'child',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
+        }
+      ]
+    });
+    
+    // Format the children data
+    const children = childrenRelationships.map(relationship => ({
+      relationship_id: relationship.id,
+      status: relationship.status,
+      relationship_type: relationship.relationship_type,
+      ...relationship.child.dataValues
+    }));
+    
+    return res.json({
+      success: true,
+      count: children.length,
+      data: children
+    });
+    
+  } catch (error) {
+    console.error('Error fetching member children:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};

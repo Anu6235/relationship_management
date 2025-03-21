@@ -183,6 +183,15 @@
               </div>
             </div>
 
+            <!-- parents -->
+            <div class="form-group">
+              <label>Parents</label>
+              <select formControlName="parents">
+                <option value="false" selected>No</option>
+                <option value="true">Yes</option>
+              </select>
+            </div>
+
             <!-- Deceased -->
             <div class="form-group">
               <label>Deceased</label>
@@ -191,6 +200,18 @@
                 <option value="true">Yes</option>
               </select>
             </div>
+          </div>
+
+          <!-- Add death date if deceased is true -->
+          <div class="form-group" *ngIf="showDeathDateField">
+            <label for="death_date">Death Date</label>
+            <input
+              type="date"
+              id="death_date"
+              formControlName="death_date"
+              class="form-control"
+              [required]="showDeathDateField"
+            />
           </div>
 
           <!-- Marital Status -->
@@ -292,7 +313,7 @@
                         >
                           {{ spouse.first_name }} {{ spouse.last_name }} ({{
                             spouse.mobile_number || ""
-                          }}) (deceased)
+                          }})
                         </div>
                         <div
                           *ngIf="deceasedSpouses.length === 0"

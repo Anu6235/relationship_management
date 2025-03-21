@@ -2,12 +2,13 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { EventEmitter, Injectable } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { AppConfig } from '../models/app-config';
+import { environment } from '../../../environments/environment'; 
 
 @Injectable({
   providedIn: 'root'
 })
 export class AppConfigService {
-  private apiUrl = 'http://localhost:5000/api/app-config';
+  private apiUrl = environment.APP_CONFIG_URL;
   configUpdated = new EventEmitter<void>();
 
   constructor(private http: HttpClient) { }

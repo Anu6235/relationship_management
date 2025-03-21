@@ -57,6 +57,7 @@ export interface RelationshipResponse {
       widowed_spouses: Member[];
       pending_spouses: Member[];
       pending_divorces: any[];
+      pending_widowed: any[];
       children: Member[];
       parents: Member[];
       marriages: ParentTable[];
@@ -91,8 +92,15 @@ export interface MarriageData {
 }
 
 export interface DeathData {
-  deceased_member_id: number;
+  member_id: number;
   death_date: Date;
+}
+
+export interface WidowedData {
+  husband_id: number;
+  wife_id: number;
+  marriage_date: Date;
+  requested_by: number;
 }
 
 export interface MarriageRequest {
@@ -111,4 +119,69 @@ export interface MemberFilterParams {
   status?: 'active' | 'inactive';
   is_verified?: boolean;
   deceased?: boolean;
+}
+
+export interface MemberParentTable {
+  id: number;
+  child_id: number;
+  father_id: number | null;
+  mother_id: number | null;
+  parent_table_id: number;
+  status: 'pending' | 'confirmed' | 'widowed' | 'divorced';
+  relationship_type: 'biological' | 'adoptive' | 'step';
+  requested_by: number;
+  child?: Member;
+  father?: Member;
+  mother?: Member;
+  parentMarriage?: ParentTable;
+  requester?: Member;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface ParentChildResponse {
+  success: boolean;
+  data: MemberParentTable[] | {
+    relationships: MemberParentTable[],
+    groupedByStatus?: {
+      confirmed: MemberParentTable[],
+      widowed: MemberParentTable[],
+      divorced: MemberParentTable[],
+      pending: MemberParentTable[]
+    }
+  } | {
+    relationships: MemberParentTable[],
+    parentsByMarriage: ParentsByMarriage[],
+    groupedByStatus: {
+      confirmed: MemberParentTable[],
+      widowed: MemberParentTable[],
+      divorced: MemberParentTable[],
+      pending: MemberParentTable[]
+    }
+  };
+  message?: string;
+}
+
+export interface ParentChildRelationshipData {
+  parent_table_id: number;
+  child_id: number;
+  relationship_type: 'biological' | 'adoptive' | 'step';
+  requested_by: number;
+}
+
+export interface ParentsByMarriage {
+  marriage_id: number;
+  marriage_status: string;
+  marriage_date?: Date;
+  divorce_date?: Date;
+  death_date?: Date;
+  status: string;
+  requested_by: number;
+  requester?: Member;
+  parents: Member[];
+}
+
+export interface ParentChildStatusUpdate {
+  parent_table_id: number;
+  new_status: 'confirmed' | 'widowed' | 'divorced';
 }

@@ -67,6 +67,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    death_date: {
+      type: DataTypes.DATE,
+      allowNull: true, 
+    },    
     marital_status: {
       type: DataTypes.ENUM('single', 'married', 'widowed', 'divorced'),
       defaultValue: 'single',
@@ -97,20 +101,35 @@ module.exports = (sequelize, DataTypes) => {
       otherKey: 'wife_id'
     });
 
-    // Parent-child relationships
-    Member.belongsToMany(Member, {
-      through: 'MemberParentTable',
-      as: 'parents',
-      foreignKey: 'child_id',
-      otherKey: 'parent_id'
-    });
+// Father-child relationships
+Member.belongsToMany(Member, {
+  through: 'MemberParentTable',
+  as: 'fathers',
+  foreignKey: 'child_id',
+  otherKey: 'father_id'
+});
 
-    Member.belongsToMany(Member, {
-      through: 'MemberParentTable',
-      as: 'children',
-      foreignKey: 'parent_id',
-      otherKey: 'child_id'
-    });
+Member.belongsToMany(Member, {
+  through: 'MemberParentTable',
+  as: 'fatherChildren',
+  foreignKey: 'father_id',
+  otherKey: 'child_id'
+});
+
+// Mother-child relationships
+Member.belongsToMany(Member, {
+  through: 'MemberParentTable',
+  as: 'mothers',
+  foreignKey: 'child_id',
+  otherKey: 'mother_id'
+});
+
+Member.belongsToMany(Member, {
+  through: 'MemberParentTable',
+  as: 'motherChildren',
+  foreignKey: 'mother_id',
+  otherKey: 'child_id'
+});
   };
 
   Member.prototype.getProfileImageUrl = function () {
@@ -132,6 +151,33 @@ module.exports = (sequelize, DataTypes) => {
     }
     return this.parent_id;
   };
+
+Member.prototype.markAsDeceased = async function(deathDate, transaction) {
+  try {
+    // Import the widowed utils
+    const widowedUtils = require('../utils/widowedUtils');
+    
+    // Mark the member as deceased
+    this.deceased = true;
+    this.death_date = deathDate;
+    await this.save({ transaction });
+    
+    // Update all current marriages
+    const updatedMarriages = await widowedUtils.updateMarriageStatusOnDeath(
+      this.id, 
+      deathDate, 
+      transaction
+    );
+    
+    return {
+      member: this,
+      updatedMarriages
+    };
+  } catch (error) {
+    console.error('Error marking member as deceased:', error);
+    throw error;
+  }
+};
 
   return Member;
 };

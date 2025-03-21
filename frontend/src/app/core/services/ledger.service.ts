@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { 
   EligibleMembersResponse, 
   Ledger, 
@@ -15,7 +16,7 @@ import {
   providedIn: 'root'
 })
 export class LedgerService {
-  private readonly baseUrl = 'http://localhost:5000/api';
+  private readonly baseUrl = environment.API_URL;
 
   constructor(private http: HttpClient) { }
 

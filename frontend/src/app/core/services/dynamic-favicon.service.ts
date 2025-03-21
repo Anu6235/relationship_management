@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { AppConfigService } from './app-config.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -31,7 +32,7 @@ export class DynamicFaviconService {
           this.titleService.setTitle(appName);
 
           if (response.data.logo) {
-            this.changeFavicon(`http://localhost:5000${response.data.logo}`);
+            this.changeFavicon(`${environment.BASE_URL}${response.data.logo}`);
           }
         }
       },

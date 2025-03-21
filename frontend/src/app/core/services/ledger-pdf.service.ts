@@ -4,6 +4,7 @@ import 'jspdf-autotable';
 import { AppConfigService } from './app-config.service';
 import { firstValueFrom } from 'rxjs';
 import { InvoiceStatus, Ledger } from '../models/ledger';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +28,7 @@ export class LedgerPdfService {
       const response = await firstValueFrom(this.appConfigService.getAppConfig());
       if (response.success && response.data) {
         if (response.data.logo) {
-          this.logoUrl = `http://localhost:5000${response.data.logo}`;
+          this.logoUrl = `${environment.BASE_URL}${response.data.logo}`;
         }
         this.appName = response.data.app_name || '';
         this.email = response.data.email || '';

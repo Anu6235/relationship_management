@@ -73,11 +73,23 @@ exports.createMember = async (req, res) => {
             isVerified = req.body.is_verified;
         }
 
+        // Create a clean member data object
         const memberData = {
-            ...req.body,
+            first_name: req.body.first_name,
+            last_name: req.body.last_name,
+            dob: req.body.dob || null,
+            gender: req.body.gender,
+            mobile_number: req.body.mobile_number,
+            email: req.body.email,
+            aadhar_number: req.body.aadhar_number,
+            address: req.body.address,
             is_verified: isVerified,
             verified_at: isVerified ? new Date() : null,
             verified_by: isVerified ? req.user?.id : null,
+            status: req.body.status === 'Active' ? 'active' : 'inactive',
+            deceased: req.body.deceased === 'true',
+            death_date: req.body.death_date === 'null' ? null : req.body.death_date,
+            marital_status: req.body.marital_status?.toLowerCase() || 'single',
             parent_id: null // No marriage handling here
         };
 
@@ -140,11 +152,24 @@ exports.updateMember = async (req, res) => {
             isVerified = req.body.is_verified;
         }
 
+        // Create a clean update data object
         const updatedData = {
-            ...req.body,
+            first_name: req.body.first_name,
+            last_name: req.body.last_name,
+            dob: req.body.dob || member.dob,
+            gender: req.body.gender || member.gender,
+            mobile_number: req.body.mobile_number || member.mobile_number,
+            email: req.body.email || member.email,
+            aadhar_number: req.body.aadhar_number || member.aadhar_number,
+            address: req.body.address || member.address,
             is_verified: isVerified,
-            verified_at: isVerified ? new Date() : member.verified_at,
-            verified_by: isVerified ? req.user?.id : member.verified_by
+            verified_at: isVerified ? (member.verified_at || new Date()) : member.verified_at,
+            verified_by: isVerified ? (req.user?.id || member.verified_by) : member.verified_by,
+            status: req.body.status ? (req.body.status === 'Active' ? 'active' : 'inactive') : member.status,
+            deceased: req.body.deceased === 'true' ? true : (req.body.deceased === 'false' ? false : member.deceased),
+            death_date: req.body.death_date === 'null' ? null : (req.body.death_date || member.death_date),
+            marital_status: req.body.marital_status ? req.body.marital_status.toLowerCase() : member.marital_status,
+            parent_id: req.body.parent_id || member.parent_id
         };
 
         // Handle profile image update
@@ -287,3 +312,36 @@ exports.deleteMember = async (req, res) => {
         });
     }
 };
+
+exports.markMemberAsDeceased = async (req, res) => {
+    const t = await sequelize.transaction();
+    
+    try {
+      const { member_id, death_date } = req.body;
+      
+      const member = await Member.findByPk(member_id);
+      if (!member) {
+        await t.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Member not found'
+        });
+      }
+      
+      const result = await member.markAsDeceased(death_date, t);
+      await t.commit();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Member marked as deceased and related marriages updated',
+        data: result
+      });
+    } catch (error) {
+      await t.rollback();
+      console.error('Error marking member as deceased:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  };

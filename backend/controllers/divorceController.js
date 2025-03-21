@@ -2,7 +2,6 @@ const { Member, sequelize, ParentTable } = require('../models');
 const { Op } = require('sequelize');
 
 // Create divorce request for existing marriage
-// For divorcing existing marriages
 exports.createDivorceExisting = async (req, res) => {
   const t = await sequelize.transaction();
 
@@ -327,6 +326,242 @@ exports.createDivorceNew = async (req, res) => {
         data: divorce
       });
     }
+  } catch (error) {
+    await t.rollback();
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Create multiple divorce requests for existing marriages
+exports.createMultipleDivorceExisting = async (req, res) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { divorces, member_id } = req.body;
+    
+    if (!divorces || !Array.isArray(divorces) || divorces.length === 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'No divorce requests provided'
+      });
+    }
+
+    const requestingMember = await Member.findByPk(member_id);
+    if (!requestingMember) {
+      await t.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Requesting member not found'
+      });
+    }
+
+    const results = [];
+    const errors = [];
+
+    // Process each divorce request
+    for (const divorce of divorces) {
+      try {
+        const { marriage_id, divorce_date } = divorce;
+
+        // Find the existing marriage
+        const existingMarriage = await ParentTable.findOne({
+          where: { id: marriage_id }
+        });
+
+        if (!existingMarriage) {
+          errors.push({ marriage_id, message: 'Marriage record not found' });
+          continue;
+        }
+
+        // Check status conditions - only proceed if status is 'confirmed'
+        if (existingMarriage.status === 'pending') {
+          errors.push({ marriage_id, message: 'Cannot request divorce for a pending marriage' });
+          continue;
+        }
+
+        if (existingMarriage.status === 'pending divorce') {
+          errors.push({ marriage_id, message: 'A divorce request is already pending for this marriage' });
+          continue;
+        }
+
+        if (existingMarriage.status === 'divorced') {
+          errors.push({ marriage_id, message: 'Cannot request divorce for an already divorced marriage' });
+          continue;
+        }
+
+        if (existingMarriage.status === 'widowed') {
+          errors.push({ marriage_id, message: 'Cannot request divorce for a widowed marriage' });
+          continue;
+        }
+
+        // Check if marriage is confirmed
+        if (existingMarriage.status !== 'confirmed') {
+          errors.push({ 
+            marriage_id, 
+            message: `Cannot request divorce for marriage with status: ${existingMarriage.status}` 
+          });
+          continue;
+        }
+
+        // Update to pending divorce and store the original status
+        const updatedMarriage = await existingMarriage.update({
+          status: 'pending divorce',
+          original_status: existingMarriage.status, // Store original status
+          divorce_date,
+          requested_by: member_id
+        }, { transaction: t });
+
+        results.push(updatedMarriage);
+      } catch (error) {
+        errors.push({ marriage_id: divorce.marriage_id, message: error.message });
+      }
+    }
+    
+    // If no divorce requests were created successfully, rollback
+    if (results.length === 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'None of the divorce requests could be created',
+        errors
+      });
+    }
+
+    await t.commit();
+    res.status(200).json({
+      success: true,
+      message: `${results.length} divorce requests created successfully`,
+      data: results,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    await t.rollback();
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Create multiple divorce requests for marriages not in system
+exports.createMultipleDivorceNew = async (req, res) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { divorces, member_id, gender } = req.body;
+    
+    if (!divorces || !Array.isArray(divorces) || divorces.length === 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'No divorce requests provided'
+      });
+    }
+
+    const mainMember = await Member.findByPk(member_id);
+    if (!mainMember) {
+      await t.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    const results = [];
+    const errors = [];
+
+    // Process each divorce request
+    for (const divorce of divorces) {
+      try {
+        const { spouse_id, marriage_date, divorce_date } = divorce;
+        
+        const spouse = await Member.findByPk(spouse_id);
+        if (!spouse) {
+          errors.push({ spouse_id, message: 'Spouse not found' });
+          continue;
+        }
+        
+        // Determine husband_id and wife_id based on gender
+        let husband_id, wife_id;
+        if (gender === 'male') {
+          husband_id = member_id;
+          wife_id = spouse_id;
+        } else {
+          husband_id = spouse_id;
+          wife_id = member_id;
+        }
+        
+        // Verify correct gender pairing
+        const husband = await Member.findByPk(husband_id);
+        const wife = await Member.findByPk(wife_id);
+        
+        if (!husband || !wife || husband.gender !== 'male' || wife.gender !== 'female') {
+          errors.push({ spouse_id, message: 'Invalid gender combination' });
+          continue;
+        }
+
+        // Check if any marriage record exists between these members
+        const existingMarriage = await ParentTable.findOne({
+          where: { husband_id, wife_id }
+        });
+
+        if (existingMarriage) {
+          errors.push({ 
+            spouse_id, 
+            message: 'A marriage record already exists for this couple. Use /divorce/existing-multiple endpoint instead.' 
+          });
+          continue;
+        }
+
+        // Create new parent table entry with pending divorce status
+        const newDivorce = await ParentTable.create(
+          {
+            husband_id,
+            wife_id,
+            marriage_date,
+            divorce_date,
+            status: 'pending divorce',
+            original_status: 'new', // Mark as a new record
+            requested_by: member_id,
+            is_current: true
+          },
+          { transaction: t }
+        );
+
+        results.push(newDivorce);
+      } catch (error) {
+        errors.push({ 
+          spouse_id: divorce.spouse_id, 
+          message: error.message 
+        });
+      }
+    }
+    
+    // If no divorce requests were created successfully, rollback
+    if (results.length === 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'None of the divorce requests could be created',
+        errors
+      });
+    }
+
+    await t.commit();
+    res.status(201).json({
+      success: true,
+      message: `${results.length} divorce requests created successfully`,
+      data: results,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
   } catch (error) {
     await t.rollback();
     console.error(error);

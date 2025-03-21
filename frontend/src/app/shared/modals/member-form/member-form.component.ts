@@ -3,7 +3,7 @@ import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Fo
 import { HttpErrorResponse } from '@angular/common/http';
 import { MemberService } from '../../../core/services/member.service';
 import { CommonModule } from '@angular/common';
-import { Member, MarriageData } from '../../../core/models/member';
+import { Member, MarriageData, DeathData, WidowedData } from '../../../core/models/member';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -68,6 +68,7 @@ export class MemberFormComponent implements OnInit {
   showDropdown: boolean[] = [];
   spouseSearchText = '';
   selectedSpouseName = '';
+  showDeathDateField: boolean = false;
   private subscriptions: Subscription[] = [];
 
 
@@ -111,7 +112,9 @@ export class MemberFormComponent implements OnInit {
       verified_by: [null],
       status: ['Active', Validators.required],
       deceased: [false],
+      death_date: [null],
       spouse_id: [null],
+      parents: [null],
       marriage_date: [null],
       divorce_date: [null],
       deceased_spouse_id: [null],
@@ -123,6 +126,24 @@ export class MemberFormComponent implements OnInit {
     this.addMaritalStatus();
 
     this.showDropdown = [false];
+
+    this.memberForm.get('deceased')?.valueChanges.subscribe((isDeceased) => {
+      this.showDeathDateField = isDeceased === true || isDeceased === 'true';
+      
+      // If not deceased, clear the death date
+      if (!this.showDeathDateField) {
+        this.memberForm.get('death_date')?.setValue(null);
+      } else {
+        // If deceased and no death date is set, default to today
+        if (!this.memberForm.get('death_date')?.value) {
+          const today = new Date().toISOString().split('T')[0];
+          this.memberForm.get('death_date')?.setValue(today);
+        }
+      }
+      
+      this.cdr.detectChanges();
+    });
+
 
     // Subscribe to spouse_id changes to update the search field
     const spouseIdSubscription = this.memberForm.get('spouse_id')?.valueChanges.subscribe(value => {
@@ -242,12 +263,15 @@ export class MemberFormComponent implements OnInit {
         "active":"Active",
         "inactive":"Inactive"
       }
+
+      const isDeceased = this.member.deceased ? true : false;
   
       const formValues = {
         ...this.member,
         dob: this.formatDateForInput(this.member.dob),
         verified_at: this.member.verified_at ? this.formatDateForInput(this.member.verified_at) : null,
         deceased: this.member.deceased ? true : false,
+        death_date: this.member.death_date ? this.formatDateForInput(this.member.death_date) : null,
         gender: this.member.gender,
         status: status_dict[this.member.status],
         marital_status: maritalStatusOption ? maritalStatusOption.value : '',
@@ -259,6 +283,8 @@ export class MemberFormComponent implements OnInit {
       console.log(formValues,'formValues')
       
       this.memberForm.patchValue(formValues);
+
+      this.showDeathDateField = isDeceased;
     }
     if (this.wife) {
       this.memberService.getMember(this.wife).subscribe({
@@ -286,79 +312,6 @@ export class MemberFormComponent implements OnInit {
     const d = new Date(date);
     return d.toISOString().split('T')[0];
   }
-
-  // loadPotentialSpouses(): void {
-  //   const gender = this.memberForm.get('gender')?.value;
-  //   if (!gender) return;
-    
-  //   // Get potential spouses of opposite gender
-  //   const oppositeGender = gender === 'male' ? 'female' : 'male';
-    
-  //   // Using the correct method from MemberService
-  //   this.memberService.getUnmarriedMembersByGender(oppositeGender).subscribe({
-  //     next: (response) => {
-  //       // Get the list of potential spouses
-  //       this.potentialSpouses = response.data || [];
-        
-  //       // If the member already has a spouse, add that spouse to the list to allow keeping the same spouse
-  //       if (this.mode === 'edit' && this.member?.spouse_id) {
-  //         this.memberService.getMember(this.member.spouse_id).subscribe({
-  //           next: (spouseResponse) => {
-  //             if (spouseResponse.data) {
-  //               // Check if the spouse is already in the list (shouldn't be, but just in case)
-  //               const existingSpouse = this.potentialSpouses.find(s => s.id === spouseResponse.data.id);
-  //               if (!existingSpouse) {
-  //                 this.potentialSpouses.unshift(spouseResponse.data);
-  //               }
-  //             }
-  //           },
-  //           error: (error) => {
-  //             console.error('Error loading existing spouse:', error);
-  //             this.errorMessage = 'Failed to load existing spouse information.';
-  //           }
-  //         });
-  //       }
-  //     },
-  //     error: (error) => {
-  //       console.error('Error loading potential spouses:', error);
-  //       this.errorMessage = 'Failed to load potential spouses. Please try again.';
-  //     }
-  //   });
-  // }
-
-  // loadDeceasedSpouses(): void {
-  //   const gender = this.memberForm.get('gender')?.value;
-  //   if (!gender) return;
-    
-  //   // Get deceased spouses of opposite gender
-  //   const oppositeGender = gender === 'male' ? 'female' : 'male';
-  //   this.memberService.getDeceasedMembersByGender(oppositeGender).subscribe({
-  //     next: (response) => {
-  //       this.deceasedSpouses = response.data || [];
-        
-  //       // If the member already has a deceased spouse, add it to the list
-  //       if (this.mode === 'edit' && this.member?.deceased_spouse_id) {
-  //         this.memberService.getMember(this.member.deceased_spouse_id).subscribe({
-  //           next: (spouseResponse) => {
-  //             if (spouseResponse.data) {
-  //               const existingDeceased = this.deceasedSpouses.find(s => s.id === spouseResponse.data.id);
-  //               if (!existingDeceased) {
-  //                 this.deceasedSpouses.unshift(spouseResponse.data);
-  //               }
-  //             }
-  //           },
-  //           error: (error) => {
-  //             console.error('Error loading existing deceased spouse:', error);
-  //           }
-  //         });
-  //       }
-  //     },
-  //     error: (error) => {
-  //       console.error('Error loading deceased spouses:', error);
-  //       this.errorMessage = 'Failed to load deceased spouses. Please try again.';
-  //     }
-  //   });
-  // }
 
   onImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -396,22 +349,20 @@ export class MemberFormComponent implements OnInit {
     // Get the form values from the main form
     const formValues = this.memberForm.value;
     
-    // Make sure to get the marital status from the FormArray if it exists
+    // We'll apply the first marital status to the main form values
+    // for backward compatibility
     if (this.maritalStatuses.length > 0) {
       const firstMaritalStatus = this.maritalStatuses.at(0).value;
       formValues.marital_status = firstMaritalStatus.maritalStatus;
       
-      // If there's a spouse selected in the first marital status, use that
       if (firstMaritalStatus.spouse_id) {
         formValues.spouse_id = firstMaritalStatus.spouse_id;
       }
       
-      // Use the marriage date from the marital status if available
       if (firstMaritalStatus.marriage_date) {
         formValues.marriage_date = firstMaritalStatus.marriage_date;
       }
       
-      // Use the divorce date from the marital status if available
       if (firstMaritalStatus.divorce_date) {
         formValues.divorce_date = firstMaritalStatus.divorce_date;
       }
@@ -420,44 +371,109 @@ export class MemberFormComponent implements OnInit {
     const spouseId = formValues.spouse_id;
     const maritalStatus = formValues.marital_status?.toLowerCase();
     
+    // First create or update the member
     if (this.mode === 'add') {
       this.addMember(formValues, spouseId, maritalStatus);
     } else {
       this.updateMember(formValues, spouseId, maritalStatus);
     }
+  }
   
-    const maritalStatusesData = formValues.maritalStatuses.map((status: any) => {
-      // Format dates
-      if (status.marriage_date) {
-        status.marriage_date = new Date(status.marriage_date).toISOString().split('T')[0];
-      }
-      if (status.divorce_date) {
-        status.divorce_date = new Date(status.divorce_date).toISOString().split('T')[0];
-      }
+  // This method is called after the member is created or updated
+  private processMaritalStatuses(memberId: number): void {
+    const maritalStatusesArray = this.maritalStatuses.value;
+    const gender = this.memberForm.get('gender')?.value;
+    
+    // Skip if no marital statuses
+    if (!maritalStatusesArray || maritalStatusesArray.length === 0) {
+      this.memberSaved.emit(this.member);
+      this.resetForm();
+      this.formSubmitting = false;
+      return;
+    }
+    
+    // Prepare data for the hybrid relationships API
+    const relationships = {
+      marriages: [] as any[],
+      divorces: [] as any[],
+      widowed_records: [] as any[]
+    };
+    
+    // Process all marital statuses
+    for (const status of maritalStatusesArray) {
+      if (!status.spouse_id) continue;
       
-      return status;
-    });
-  
-    if (this.mode === 'add' && maritalStatusesData.length > 1) {
-      // Start from index 1 (second marriage) since the first one is handled by main form
-      for (let i = 1; i < maritalStatusesData.length; i++) {
-        const marriageStatus = maritalStatusesData[i];
-        
-        if (marriageStatus.maritalStatus === 'Married' && marriageStatus.spouse_id) {
-          const gender = formValues.gender;
-          const husbandId = gender === 'male' ? formValues.id || null : marriageStatus.spouse_id;
-          const wifeId = gender === 'female' ? formValues.id || null : marriageStatus.spouse_id;
+      // Format dates properly
+      const marriageDate = status.marriage_date ? 
+        new Date(status.marriage_date).toISOString().split('T')[0] : 
+        new Date().toISOString().split('T')[0];
+      
+      switch (status.maritalStatus?.toLowerCase()) {
+        case 'married':
+          relationships.marriages.push({
+            spouse_id: Number(status.spouse_id),
+            marriage_date: marriageDate
+          });
+          break;
           
-          // Create additional marriage
-          if (husbandId && wifeId) {
-            const marriageDate = marriageStatus.marriage_date || new Date().toISOString().split('T')[0];
-            this.createAdditionalMarriage(husbandId, wifeId, marriageDate, formValues.id || null);
-          }
-        }
+        case 'divorced':
+          const divorceDate = status.divorce_date ? 
+            new Date(status.divorce_date).toISOString().split('T')[0] : 
+            new Date().toISOString().split('T')[0];
+            
+          relationships.divorces.push({
+            spouse_id: Number(status.spouse_id),
+            marriage_date: marriageDate,
+            divorce_date: divorceDate
+          });
+          break;
+          
+        case 'widowed':
+          relationships.widowed_records.push({
+            spouse_id: Number(status.spouse_id),
+            marriage_date: marriageDate
+          });
+          break;
       }
     }
     
-    console.log('Marital statuses data:', maritalStatusesData);
+    // Check if we have any relationships to process
+    const hasRelationships = 
+      relationships.marriages.length > 0 || 
+      relationships.divorces.length > 0 || 
+      relationships.widowed_records.length > 0;
+      
+    if (!hasRelationships) {
+      this.memberSaved.emit(this.member);
+      this.resetForm();
+      this.formSubmitting = false;
+      return;
+    }
+    
+    // Create payload for the hybrid request
+    const hybridData = {
+      member_id: memberId,
+      gender,
+      marriages: relationships.marriages,
+      divorces: relationships.divorces,
+      widowed_records: relationships.widowed_records
+    };
+    
+    // Send the hybrid request
+    this.memberService.createHybridRelationships(hybridData).subscribe({
+      next: (response) => {
+        this.memberSaved.emit(response.data);
+        this.resetForm();
+        this.formSubmitting = false;
+      },
+      error: (error) => {
+        console.error('Error creating marital relationships:', error);
+        this.errorMessage = 'Member information updated, but marital relationship details could not be modified.';
+        this.memberSaved.emit(this.member);
+        this.resetForm();
+        this.formSubmitting = false;
+      }
+    });
   }
 
   private createAdditionalMarriage(husbandId: number, wifeId: number, marriageDate: string, requestedBy: number | null): void {
@@ -486,6 +502,7 @@ export class MemberFormComponent implements OnInit {
     formValues.dob = formValues.dob ? new Date(formValues.dob).toISOString().split('T')[0] : null;
     formValues.marriage_date = formValues.marriage_date ? new Date(formValues.marriage_date).toISOString().split('T')[0] : null;
     formValues.divorce_date = formValues.divorce_date ? new Date(formValues.divorce_date).toISOString().split('T')[0] : null;
+    formValues.death_date = formValues.death_date ? new Date(formValues.death_date).toISOString().split('T')[0] : null;
     formValues.verified_at = formValues.verified_at ? new Date(formValues.verified_at).toISOString() : null;
     formValues.created_at = new Date().toISOString();
     formValues.updated_at = new Date().toISOString();
@@ -510,40 +527,8 @@ export class MemberFormComponent implements OnInit {
       next: (response) => {
         const newMemberId = response.data.id;
         
-        // Handle relationships based on marital status
-        if (response.success && spouseId) {
-          const gender = formValues.gender;
-          const marriageDate = formValues.marriage_date || new Date().toISOString().split('T')[0];
-          
-          if (maritalStatus === 'married') {
-            // Determine husband_id and wife_id based on gender
-            const husbandId = gender === 'male' ? newMemberId : spouseId;
-            const wifeId = gender === 'female' ? newMemberId : spouseId;
-            
-            // Create the marriage request
-            this.createMarriage(husbandId, wifeId, marriageDate, newMemberId);
-          } 
-          else if (maritalStatus === 'divorced') {
-            // Determine husband_id and wife_id based on gender
-            const husbandId = gender === 'male' ? newMemberId : spouseId;
-            const wifeId = gender === 'female' ? newMemberId : spouseId;
-            
-            const divorceDate = formValues.divorce_date || new Date().toISOString().split('T')[0];
-            
-            // Create the divorce request for new marriage (not in system yet)
-            this.createDivorceForNewMarriage(husbandId, wifeId, marriageDate, divorceDate, newMemberId);
-          }
-          else if (maritalStatus === 'widowed' && formValues.deceased_spouse_id) {
-            // Just mark the member as widowed - no further action needed
-            this.memberSaved.emit(response.data);
-            this.resetForm();
-          }
-        } else {
-          // If no relationship to create, just emit the added member
-          this.memberSaved.emit(response.data);
-          this.resetForm();
-        }
-        this.formSubmitting = false;
+        // Now process all marital statuses
+        this.processMaritalStatuses(newMemberId);
       },
       error: (error) => {
         // Error handling
@@ -555,7 +540,7 @@ export class MemberFormComponent implements OnInit {
       }
     });
   }
-
+  
   private updateMember(formValues: any, spouseId: number | null, maritalStatus: string): void {
     if (!this.member?.id) {
       this.errorMessage = 'Member ID is missing';
@@ -563,13 +548,12 @@ export class MemberFormComponent implements OnInit {
       return;
     }
   
-    const oldSpouseId = this.member.spouse_id;
-    const oldMaritalStatus = this.member.marital_status?.toLowerCase();
+    const memberId = this.member.id; // Store this.member.id in a local variable
   
     // Format dates properly
     const updatedMember = {
       ...formValues,
-      id: this.member.id,
+      id: memberId,
       dob: new Date(formValues.dob),
       verified_at: formValues.verified_at ? new Date(formValues.verified_at) : null,
       marriage_date: formValues.marriage_date ? new Date(formValues.marriage_date) : null,
@@ -579,132 +563,18 @@ export class MemberFormComponent implements OnInit {
     };
   
     this.memberService.updateMember(
-      this.member.id,
+      memberId,
       updatedMember,
       this.selectedImage,
       this.removeExistingImage
     ).subscribe({
       next: (response) => {
-        // Only handle relationship changes if marital status or spouse has changed
-        const hasMaritalStatusChanged = maritalStatus !== oldMaritalStatus;
-        const hasSpouseChanged = spouseId !== oldSpouseId;
-  
-        if (hasMaritalStatusChanged || hasSpouseChanged) {
-          if (maritalStatus === 'married' && spouseId) {
-            // If changed to married or spouse changed while still married
-            const gender = formValues.gender;
-            const marriageDate = formValues.marriage_date || new Date().toISOString().split('T')[0];
-  
-            // Determine husband_id and wife_id based on gender
-            const husbandId = gender === 'male' ? this.member!.id : spouseId;
-            const wifeId = gender === 'female' ? this.member!.id : spouseId;
-  
-            this.createMarriage(husbandId, wifeId, marriageDate, this.member!.id);
-          } else if (maritalStatus === 'divorced' && spouseId) {
-            const gender = formValues.gender;
-            const marriageDate = formValues.marriage_date || new Date().toISOString().split('T')[0];
-            const divorceDate = formValues.divorce_date || new Date().toISOString().split('T')[0];
-          
-            // Determine husband_id and wife_id based on gender
-            const husbandId = gender === 'male' ? this.member!.id : spouseId;
-            const wifeId = gender === 'female' ? this.member!.id : spouseId;
-          
-            // Check if there's an existing marriage record
-            this.memberService.getMarriageBySpouseIds(husbandId, wifeId).subscribe({
-              next: (marriageResponse) => {
-                // Check if data is an array (seems to be the case based on the error)
-              // Check if data is an array (seems to be the case based on the error)
-if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.data) && marriageResponse.data.length > 0) {
-  // It's an array, so use the first item
-  const marriage = marriageResponse.data[0];
-  if ('id' in marriage && typeof marriage.id === 'number') {
-    this.createDivorceForExistingMarriage(
-      marriage.id,
-      divorceDate,
-      this.member!.id
-    );
-  } else {
-    console.error('Invalid marriage id in response');
-    this.errorMessage = 'Invalid marriage record found.';
-    this.formSubmitting = false;
-  }
-} else if (marriageResponse && marriageResponse.data && 
-          typeof marriageResponse.data === 'object' && 
-          marriageResponse.data !== null &&
-          'id' in marriageResponse.data && 
-          typeof marriageResponse.data.id === 'number') {
-  // It's a single object with an id property
-  this.createDivorceForExistingMarriage(
-    marriageResponse.data.id,
-    divorceDate,
-    this.member!.id
-  );
-} 
-              },
-              error: (error) => {
-                console.error('Error checking for existing marriage:', error);
-                
-                // Fallback to checking member marriages
-                this.memberService.getMemberMarriages(this.member!.id).subscribe({
-                  next: (marriagesResponse) => {
-                    if (marriagesResponse.data && Array.isArray(marriagesResponse.data) && marriagesResponse.data.length > 0) {
-                      // Find the active marriage with this spouse
-                      const existingMarriage = marriagesResponse.data.find(
-                        (m: any) => (m.husband_id === husbandId && m.wife_id === wifeId) ||
-                          (m.husband_id === wifeId && m.wife_id === husbandId)
-                      );
-          
-                      if (existingMarriage) {
-                        // Create divorce for existing marriage
-                        this.createDivorceForExistingMarriage(
-                          existingMarriage.id,
-                          divorceDate,
-                          this.member!.id
-                        );
-                      } else {
-                        // No matching marriage found
-                        this.createDivorceForNewMarriage(
-                          husbandId,
-                          wifeId,
-                          marriageDate,
-                          divorceDate,
-                          this.member!.id
-                        );
-                      }
-                    } else {
-                      // No marriages found
-                      this.createDivorceForNewMarriage(
-                        husbandId,
-                        wifeId,
-                        marriageDate,
-                        divorceDate,
-                        this.member!.id
-                      );
-                    }
-                  },
-                  error: (secondError) => {
-                    console.error('Error finding existing marriage:', secondError);
-                    this.formSubmitting = false;
-                    this.errorMessage = 'Failed to process marriage information for divorce.';
-                  }
-                });
-              }
-            });
-          } else if (maritalStatus === 'widowed' && formValues.deceased_spouse_id) {
-            // Just update the member as widowed
-            this.memberSaved.emit(response.data);
-            this.resetForm();
-          } else {
-            // Other status changes (e.g., to single)
-            this.memberSaved.emit(response.data);
-            this.resetForm();
-          }
-        } else {
-          // No relationship status changes
-          this.memberSaved.emit(response.data);
-          this.resetForm();
+        if (updatedMember.deceased && updatedMember.death_date) {
+          this.handleDeceasedMember(memberId, updatedMember.death_date);
         }
-        this.formSubmitting = false;
+        
+        // After updating the member, process all marital statuses
+        this.processMaritalStatuses(memberId);
       },
       error: (error) => {
         this.formSubmitting = false;
@@ -735,167 +605,151 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
     }
   }
 
-  createMarriage(husbandId: number, wifeId: number, marriageDate: string, requestedBy: number): void {
+  createMaritalRelationships(requestedBy: number): void {
     const maritalStatuses = this.memberForm.get('maritalStatuses')?.value || [];
     const gender = this.memberForm.get('gender')?.value;
-
-    // Check for multiple spouses
-    let validMarriageCount = 1;
-    const additionalMarriages = [];
-
-    // Process additional marriages from marital statuses
-    for (let i = 1; i < maritalStatuses.length; i++) {
-      const status = maritalStatuses[i];
-      if (status.maritalStatus === 'Married' && status.spouse_id) {
-        validMarriageCount++;
-        additionalMarriages.push({
-          spouse_id: status.spouse_id,
-          marriage_date: status.marriage_date ? new Date(status.marriage_date).toISOString().split('T')[0] : marriageDate
-        });
-      }
+    const memberId = requestedBy;
+    
+    // Early exit if no marital statuses
+    if (!maritalStatuses || maritalStatuses.length === 0) {
+      this.memberSaved.emit(this.member);
+      this.resetForm();
+      return;
     }
-    
-    if (validMarriageCount === 1) {
-      const marriageData: MarriageData = {
-        husband_id: husbandId,
-        wife_id: wifeId,
-        marriage_date: new Date(marriageDate),
-        requested_by: requestedBy
-      };
-    
-    this.memberService.createMarriageRequest(marriageData).subscribe({
-      next: (response) => {
-        this.memberSaved.emit(response.data);
-        this.resetForm();
-      },
-      error: (error) => {
-        console.error('Error creating marriage relationship:', error);
-        
-        this.errorMessage = 'Member information updated, but marriage details could not be modified.';
-        this.memberSaved.emit(this.member);
-        this.resetForm();
-        this.formSubmitting = false;
-      }
-    });
-  }
-  else if (validMarriageCount > 1) {
-    const marriages = [
-      {
-        spouse_id: gender === 'male' ? wifeId : husbandId,
-        marriage_date: marriageDate
-      },
-      ...additionalMarriages
-    ];
-
-    // Create multiple marriages in a single request
-    const data = {
-      marriages,
-      member_id: requestedBy,
-      gender
-    };
-
-    this.memberService.createMultipleMarriage(data).subscribe({
-      next: (response) => {
-        this.memberSaved.emit(response.data);
-        this.resetForm();
-      },
-      error: (error) => {
-        console.error('Error creating multiple marriage relationships:', error);
-        
-        this.errorMessage = 'Member information updated, but marriage details could not be modified.';
-        this.memberSaved.emit(this.member);
-        this.resetForm();
-        this.formSubmitting = false;
-      }
-    });
-  }
-}
   
-  createDivorceForNewMarriage(husbandId: number, wifeId: number, marriageDate: string, divorceDate: string, requestedBy: number): void {
-    // Check if there are multiple divorce entries in the form
-    const maritalStatuses = this.memberForm.get('maritalStatuses')?.value || [];
-    const gender = this.memberForm.get('gender')?.value;
-    
-    // Check for multiple divorce records
-    let validDivorceCount = 1;
-    const additionalDivorces = [];
-    
-    // Process additional divorces from marital statuses
-    for (let i = 1; i < maritalStatuses.length; i++) {
+    // Categorize relationships by type
+    const relationships = {
+      marriages: [] as any[],
+      divorces: [] as any[],
+      widowed: [] as any[]
+    };
+  
+    // Process all marital statuses from the form
+    for (let i = 0; i < maritalStatuses.length; i++) {
       const status = maritalStatuses[i];
-      if ((status.maritalStatus === 'Divorced' || status.maritalStatus === 'Widowed') && status.spouse_id) {
-        validDivorceCount++;
-        
-        // Ensure marriage_date is always a Date object (default to today if null)
-        const marriageDate = status.marriage_date 
-          ? new Date(status.marriage_date) 
-          : new Date(); // Default to today instead of null
-        
-        additionalDivorces.push({
-          husband_id: gender === 'male' ? requestedBy : status.spouse_id,
-          wife_id: gender === 'female' ? requestedBy : status.spouse_id,
-          marriage_date: marriageDate,
-          divorce_date: status.divorce_date ? new Date(status.divorce_date) : new Date(),
-          requested_by: requestedBy
-        });
+      if (!status.spouse_id) continue;
+      
+      const spouseId = Number(status.spouse_id);
+      const marriageDate = status.marriage_date ? 
+        new Date(status.marriage_date).toISOString().split('T')[0] : 
+        new Date().toISOString().split('T')[0];
+      
+      switch (status.maritalStatus) {
+        case 'Married':
+          relationships.marriages.push({
+            spouse_id: spouseId,
+            marriage_date: marriageDate
+          });
+          break;
+          
+        case 'Divorced':
+          const divorceDate = status.divorce_date ? 
+            new Date(status.divorce_date).toISOString().split('T')[0] : 
+            new Date().toISOString().split('T')[0];
+            
+          relationships.divorces.push({
+            spouse_id: spouseId,
+            marriage_date: marriageDate,
+            divorce_date: divorceDate
+          });
+          break;
+          
+        case 'Widowed':
+          relationships.widowed.push({
+            spouse_id: spouseId,
+            marriage_date: marriageDate
+          });
+          break;
       }
     }
     
-    if (validDivorceCount === 1) {
-      // Single divorce case
-      const divorceData = {
-        husband_id: husbandId,
-        wife_id: wifeId,
-        marriage_date: new Date(marriageDate),
-        divorce_date: new Date(divorceDate),
-        requested_by: requestedBy
-      };
+    // Check if we have any relationships to process
+    const hasRelationships = 
+      relationships.marriages.length > 0 || 
+      relationships.divorces.length > 0 || 
+      relationships.widowed.length > 0;
       
-      this.memberService.createDivorceRequestForNew(divorceData).subscribe({
-        next: (response) => {
-          this.memberSaved.emit(response.data);
-          this.resetForm();
-        },
-        error: (error) => {
-          console.error('Error creating divorce record:', error);
-          this.formSubmitting = false;
-          this.errorMessage = 'Failed to record divorce information.';
-        }
-      });
-    } 
-    else if (validDivorceCount > 1) {
-      // Multiple divorces case - similar to how multiple marriages are handled
-      const divorces = [
-        {
-          husband_id: husbandId,
-          wife_id: wifeId,
-          marriage_date: new Date(marriageDate),
-          divorce_date: new Date(divorceDate),
-          requested_by: requestedBy
-        },
-        ...additionalDivorces
-      ];
-      
-      // Create multiple divorces in a single request
-      const divorceData = {
-        divorces: divorces,
-        requested_by: requestedBy
-      };
-      
-      this.memberService.createDivorceRequestForNew(divorceData).subscribe({
-        next: (response) => {
-          this.memberSaved.emit(response.data);
-          this.resetForm();
-        },
-        error: (error) => {
-          console.error('Error creating multiple divorce records:', error);
-          this.formSubmitting = false;
-          this.errorMessage = 'Failed to record divorce information.';
-        }
-      });
+    if (!hasRelationships) {
+      this.memberSaved.emit(this.member);
+      this.resetForm();
+      return;
     }
+    
+    // Create payload for the hybrid request
+    const hybridData = {
+      member_id: memberId,
+      gender,
+      marriages: relationships.marriages,
+      divorces: relationships.divorces,
+      widowed_records: relationships.widowed
+    };
+    
+    // Send the hybrid request
+    this.memberService.createHybridRelationships(hybridData).subscribe({
+      next: (response) => {
+        this.memberSaved.emit(response.data);
+        this.resetForm();
+        this.formSubmitting = false;
+      },
+      error: (error) => {
+        console.error('Error creating marital relationships:', error);
+        this.errorMessage = 'Member information updated, but marital relationship details could not be modified.';
+        this.memberSaved.emit(this.member);
+        this.resetForm();
+        this.formSubmitting = false;
+      }
+    });
   }
-
+  
+  // Legacy method - redirects to the hybrid method
+  createMarriage(husbandId: number, wifeId: number, marriageDate: string, requestedBy: number): void {
+    // Set up the form data
+    const gender = this.memberForm.get('gender')?.value;
+    const spouseId = gender === 'male' ? wifeId : husbandId;
+    
+    // Clear existing marital statuses
+    const maritalStatusesControl = this.memberForm.get('maritalStatuses') as FormArray;
+    while (maritalStatusesControl.length > 0) {
+      maritalStatusesControl.removeAt(0);
+    }
+    
+    // Add the current marriage
+    maritalStatusesControl.push(this.fb.group({
+      maritalStatus: 'Married',
+      spouse_id: spouseId,
+      marriage_date: marriageDate,
+      divorce_date: null
+    }));
+    
+    // Use the hybrid method
+    this.createMaritalRelationships(requestedBy);
+  }
+  
+  // Legacy method - redirects to the hybrid method
+  createDivorceForNewMarriage(husbandId: number, wifeId: number, marriageDate: string, divorceDate: string, requestedBy: number): void {
+    // Set up the form data
+    const gender = this.memberForm.get('gender')?.value;
+    const spouseId = gender === 'male' ? wifeId : husbandId;
+    
+    // Clear existing marital statuses
+    const maritalStatusesControl = this.memberForm.get('maritalStatuses') as FormArray;
+    while (maritalStatusesControl.length > 0) {
+      maritalStatusesControl.removeAt(0);
+    }
+    
+    // Add the divorce
+    maritalStatusesControl.push(this.fb.group({
+      maritalStatus: 'Divorced',
+      spouse_id: spouseId,
+      marriage_date: marriageDate,
+      divorce_date: divorceDate
+    }));
+    
+    // Use the hybrid method
+    this.createMaritalRelationships(requestedBy);
+  }
+  
+  // Legacy method - for existing marriages that need to be divorced
   createDivorceForExistingMarriage(marriageId: number, divorceDate: string, requestedBy: number): void {
     const divorceData = {
       marriage_id: marriageId,
@@ -907,11 +761,121 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
       next: (response) => {
         this.memberSaved.emit(response.data);
         this.resetForm();
+        this.formSubmitting = false;
       },
       error: (error) => {
         console.error('Error creating divorce for existing marriage:', error);
         this.formSubmitting = false;
         this.errorMessage = 'Failed to record divorce information for the existing marriage.';
+      }
+    });
+  }
+  
+  // Legacy method - redirects to the hybrid method
+  createWidowed(husbandId: number, wifeId: number, marriageDate: string, requestedBy: number): void {
+    // Set up the form data
+    const gender = this.memberForm.get('gender')?.value;
+    const spouseId = gender === 'male' ? wifeId : husbandId;
+    
+    // Clear existing marital statuses
+    const maritalStatusesControl = this.memberForm.get('maritalStatuses') as FormArray;
+    while (maritalStatusesControl.length > 0) {
+      maritalStatusesControl.removeAt(0);
+    }
+    
+    // Add the widowed status
+    maritalStatusesControl.push(this.fb.group({
+      maritalStatus: 'Widowed',
+      spouse_id: spouseId,
+      marriage_date: marriageDate,
+      divorce_date: null
+    }));
+    
+    // Use the hybrid method
+    this.createMaritalRelationships(requestedBy);
+  }
+
+  private handleDeceasedMember(memberId: number, deathDate: Date): void {
+    // Verify that member ID exists
+    if (!memberId) {
+      console.error('Cannot mark member as deceased: Member ID is missing');
+      return;
+    }
+  
+    // Only proceed if the member is marked as deceased and has a death date
+    if (this.memberForm.get('deceased')?.value === true && deathDate) {
+      const deathData = {
+        member_id: memberId,
+        death_date: deathDate
+      };
+  
+      // Mark the member as deceased
+      this.memberService.markMemberAsDeceased(deathData).subscribe({
+        next: (response) => {
+          console.log('Member marked as deceased successfully', response);
+  
+          // If the member being marked as deceased is married, update their spouse's status
+          if (this.member?.marital_status?.toLowerCase() === 'married' && this.member?.spouse_id) {
+            this.updateSpouseToWidowed(this.member.spouse_id, deathDate);
+          }
+        },
+        error: (error) => {
+          console.error('Error marking member as deceased:', error);
+          this.errorMessage = 'Failed to mark member as deceased. Please try again.';
+        }
+      });
+    }
+  }
+  
+  private updateSpouseToWidowed(spouseId: number, deathDate: Date): void {
+    // Verify that spouse ID exists
+    if (!spouseId) {
+      console.error('Cannot update spouse status: Spouse ID is missing');
+      return;
+    }
+  
+    // Fetch the spouse's details
+    this.memberService.getMember(spouseId).subscribe({
+      next: (response) => {
+        if (response.data) {
+          const spouse = response.data;
+  
+          // Create the update data with proper marital status
+          const spouseUpdateData = {
+            id: spouse.id,
+            marital_status: 'Widowed',  // Make sure this matches exactly what your API expects
+            spouse_id: null,
+            deceased_spouse_id: this.member?.id,
+            updated_at: new Date()
+          };
+  
+          console.log('Updating spouse to widowed with data:', spouseUpdateData);
+  
+          // Call the service to update the spouse
+          this.memberService.updateMember(
+            spouse.id, 
+            spouseUpdateData, 
+            null,  // No image file
+            false  // Don't remove existing image
+          ).subscribe({
+            next: (updateResponse) => {
+              console.log('Spouse updated to widowed successfully:', updateResponse);
+  
+              // Additional verification logging
+              this.memberService.getMember(spouseId).subscribe(verifyResponse => {
+                console.log('Verified spouse status after update:', verifyResponse.data?.marital_status);
+              });
+            },
+            error: (error) => {
+              console.error('Error updating spouse to widowed:', error);
+            }
+          });
+        } else {
+          console.error('Spouse data not found in response');
+        }
+      },
+      error: (error) => {
+        console.error('Error fetching spouse details:', error);
       }
     });
   }
@@ -1106,20 +1070,28 @@ if (marriageResponse && marriageResponse.data && Array.isArray(marriageResponse.
       this.errorMessage = 'Please select a gender first';
       return;
     }
-    
+  
     // Determine opposite gender
     const oppositeGender = gender === 'male' ? 'female' : 'male';
-    
-    this.memberService.getDeceasedMembersByGender(oppositeGender).subscribe({
+  
+    this.memberService.getMembers(oppositeGender).subscribe({
       next: (response) => {
-        this.deceasedSpouses = response.data || [];
+        if (response.data) {
+          // Filter for deceased members
+          this.deceasedSpouses = response.data.filter(member => member.deceased);
+          console.log('Deceased Spouses:', this.deceasedSpouses); 
+        } else {
+          this.deceasedSpouses = [];
+          console.log('No data returned from API');
+        }
       },
       error: (error) => {
         console.error('Error loading deceased spouses:', error);
+        this.errorMessage = 'Failed to load deceased spouses';
       }
     });
   }
-
+  
   selectSpouse(index: number, spouse: Member): void {
     const maritalStatusControl = this.maritalStatuses.at(index);
     

@@ -66,13 +66,16 @@ exports.createMultipleMarriages = async (req, res) => {
         continue; // Skip this marriage if already exists
       }
       
+      // Determine status based on whether the requesting member is deceased
+      const status = mainMember.deceased ? 'pending widowed' : 'pending';
+      
       // Create a new marriage record in pending state
       const newMarriage = await ParentTable.create(
         { 
           husband_id, 
           wife_id, 
           marriage_date, 
-          status: 'pending', // Set to pending
+          status, // Now using the status determined above
           requested_by: member_id 
         },
         { transaction: t }
@@ -95,6 +98,87 @@ exports.createMultipleMarriages = async (req, res) => {
       success: true,
       message: `${createdMarriages.length} marriage requests created successfully`,
       data: createdMarriages
+    });
+
+  } catch (error) {
+    await t.rollback();
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Keep the existing controller methods
+exports.createMarriage = async (req, res) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { husband_id, wife_id, marriage_date, requested_by } = req.body;
+
+    // Verify both members exist
+    const [husband, wife] = await Promise.all([
+      Member.findByPk(husband_id),
+      Member.findByPk(wife_id)
+    ]);
+
+    if (!husband || !wife) {
+      await t.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'One or both members not found'
+      });
+    }
+
+    // Verify gender
+    if (husband.gender !== 'male' || wife.gender !== 'female') {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid gender combination'
+      });
+    }
+
+    // Check if the same husband and wife have already married before
+    const existingMarriage = await ParentTable.findOne({
+      where: {
+        husband_id,
+        wife_id
+      }
+    });
+
+    if (existingMarriage) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'This couple is already married and cannot remarry'
+      });
+    }
+
+    // Find the requesting member to check if they are deceased
+    const requestingMember = await Member.findByPk(requested_by);
+    if (!requestingMember) {
+      await t.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Requesting member not found'
+      });
+    }
+
+    // Determine status based on deceased flag
+    const status = requestingMember.deceased ? 'pending widowed' : 'pending';
+
+    // Create a new marriage record
+    const marriage = await ParentTable.create(
+      { husband_id, wife_id, marriage_date, status, requested_by },
+      { transaction: t }
+    );
+
+    await t.commit();
+    res.status(201).json({
+      success: true,
+      data: marriage
     });
 
   } catch (error) {
@@ -197,74 +281,6 @@ exports.confirmMarriage = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || "An error occurred while confirming the marriage",
-    });
-  }
-};
-
-// Keep the existing controller methods
-exports.createMarriage = async (req, res) => {
-  const t = await sequelize.transaction();
-
-  try {
-    const { husband_id, wife_id, marriage_date, requested_by } = req.body;
-
-    // Verify both members exist
-    const [husband, wife] = await Promise.all([
-      Member.findByPk(husband_id),
-      Member.findByPk(wife_id)
-    ]);
-
-    if (!husband || !wife) {
-      await t.rollback();
-      return res.status(404).json({
-        success: false,
-        message: 'One or both members not found'
-      });
-    }
-
-    // Verify gender
-    if (husband.gender !== 'male' || wife.gender !== 'female') {
-      await t.rollback();
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid gender combination'
-      });
-    }
-
-    // Check if the same husband and wife have already married before
-    const existingMarriage = await ParentTable.findOne({
-      where: {
-        husband_id,
-        wife_id
-      }
-    });
-
-    if (existingMarriage) {
-      await t.rollback();
-      return res.status(400).json({
-        success: false,
-        message: 'This couple is already married and cannot remarry'
-      });
-    }
-
-    // Create a new marriage record
-    const marriage = await ParentTable.create(
-      { husband_id, wife_id, marriage_date, status: 'pending', requested_by },
-      { transaction: t }
-    );
-
-    await t.commit();
-    res.status(201).json({
-      success: true,
-      data: marriage
-    });
-
-  } catch (error) {
-    await t.rollback();
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: error.message
     });
   }
 };

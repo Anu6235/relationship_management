@@ -14,6 +14,7 @@ interface RelationshipResponse {
       widowed_spouses: Member[];
       pending_spouses: any[]; 
       pending_divorces: any[]; 
+      pending_widowed: any[]; 
       children: Member[];
       parents: Member[];
       marriages: any[];
@@ -39,7 +40,8 @@ export class FamilyRelationshipComponent implements OnInit {
     divorced_spouses: Member[];
     widowed_spouses: Member[];
     pending_spouses: any[];
-    pending_divorces: any[];  
+    pending_divorces: any[]; 
+    pending_widowed: any[];   
     children: Member[];
     parents: Member[];
     marriages: any[];
@@ -79,6 +81,10 @@ export class FamilyRelationshipComponent implements OnInit {
               divorced_spouses: response.data.relationships.divorced_spouses,
               widowed_spouses: response.data.relationships.widowed_spouses,
               pending_spouses: response.data.relationships.pending_spouses.map(request => ({
+                ...request,
+                request_id: request.request_id
+              })),
+               pending_widowed: response.data.relationships.pending_widowed.map(request => ({
                 ...request,
                 request_id: request.request_id
               })),
@@ -149,7 +155,7 @@ export class FamilyRelationshipComponent implements OnInit {
     parentElement.appendChild(initialsDiv);
   }
 
-  formatDate(date: Date | string | null): string {
+  formatDate(date: Date | string | null | undefined): string {
     if (!date) return '-';
     const d = new Date(date);
     if (isNaN(d.getTime())) return '-'; // Check for invalid date
@@ -175,6 +181,7 @@ export class FamilyRelationshipComponent implements OnInit {
         return 'bg-gray-100 text-gray-800 gender-default';
     }
   }
+
 
   getStatus(status: string): string {
     if (!status) return 'text-gray-600 status-default';
@@ -323,6 +330,61 @@ export class FamilyRelationshipComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error rejecting divorce:', error);
+        }
+      });
+  }
+
+  confirmWidowed(requestId: number): void {
+    if (!requestId) {
+      console.error('Invalid request ID');
+      return;
+    }
+    
+    this.memberService.confirmWidowedRequest(requestId, this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success) {
+            // Remove the request from pending_spouses
+            if (this.relationshipData && this.relationshipData.pending_spouses) {
+              this.relationshipData.pending_spouses = this.relationshipData.pending_spouses.filter(
+                spouse => spouse.request_id !== requestId
+              );
+            }
+            
+            // Refresh relationship data to show updated widowed status
+            this.fetchRelationshipData();
+          } else {
+            console.error('Failed to confirm widowed:', response);
+          }
+        },
+        error: (error) => {
+          console.error('Error confirming widowed:', error);
+        }
+      });
+  }
+  
+  rejectWidowed(requestId: number): void {
+    if (!requestId) {
+      console.error('Invalid request ID');
+      return;
+    }
+    
+    this.memberService.declineWidowedRequest(requestId, this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success) {
+            // Remove the request from pending_spouses
+            if (this.relationshipData && this.relationshipData.pending_spouses) {
+              this.relationshipData.pending_spouses = this.relationshipData.pending_spouses.filter(
+                spouse => spouse.request_id !== requestId
+              );
+            }
+          } else {
+            console.error('Failed to reject widowed:', response);
+          }
+        },
+        error: (error) => {
+          console.error('Error rejecting widowed:', error);
         }
       });
   }

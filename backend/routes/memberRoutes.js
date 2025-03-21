@@ -4,6 +4,9 @@ const marriageController = require('../controllers/marriageController');
 const divorceController = require('../controllers/divorceController');
 const relationshipController = require('../controllers/relationshipController');
 const deathController = require('../controllers/deathController');
+const widowedController = require('../controllers/widowedController');
+const hybridController = require('../controllers/hybridRelationshipController');
+const parentChildController  = require('../controllers/childRelationshipController');
 const { Member, User } = require('../models');
 const { protect } = require('../middleware/authMiddleware');
 const multer = require('multer');
@@ -123,6 +126,7 @@ router.get('/:id', memberController.getMemberById);
 router.post('/', protect, upload.single('profile_image'), memberController.createMember);
 router.put('/:id', protect, upload.single('profile_image'), memberController.updateMember);
 router.delete('/:id', protect, memberController.deleteMember);
+router.post('/mark-deceased', protect, memberController.markMemberAsDeceased);
 
 // =================== MARRIAGE MANAGEMENT ===================
 
@@ -138,14 +142,41 @@ router.get('/:id/marriages', marriageController.getMemberMarriages);
 router.get('/get_wife/:id', protect, relationshipController.getWife);
 router.get('/get_marriage/spouses', relationshipController.getMarriageBySpouses);
 router.get('/:id/relationships', relationshipController.getMemberRelationships);
+router.get('/relationship/parents', relationshipController.getAllParentRelationships);
 
 // =================== DIVORCE MANAGEMENT ===================
 
 router.post('/divorce/existing', divorceController.createDivorceExisting);
 router.post('/divorce/new', divorceController.createDivorceNew);
+router.post('/divorce/existing-multiple', divorceController.createMultipleDivorceExisting);
+router.post('/divorce/new-multiple', divorceController.createMultipleDivorceNew);
 router.put('/divorce/:id/confirm', divorceController.confirmDivorce);
 router.put('/divorce/:id/decline', divorceController.declineDivorce);
 router.get('/divorce-requests/:memberId', protect, divorceController.getDivorceRequests);
+
+// =================== WIDOWED MANAGEMENT ===================
+
+router.post('/widowed', widowedController.createWidowed);
+router.post('/widowed-multiple', widowedController.createMultipleWidowed);
+router.put('/widowed/:id/confirm', widowedController.confirmWidowed);
+router.put('/widowed/:id/decline', widowedController.declineWidowed);
+router.get('/widowed-requests/:memberId', protect, widowedController.getWidowedRequests);
+router.get('/:id/widowed-history', widowedController.getMemberWidowedHistory);
+
+// =================== HYBRID RELATION MANAGEMENT ===================
+
+router.post('/multiple-relationship-request', hybridController.createHybridRelationships);
+router.post('/relationship-history', hybridController.processLifeStory);
+
+// =================== CHILD PARENT MANAGEMENT ===================
+
+router.post('/parent-child', protect, parentChildController.createParentChildRelationship);
+router.put('/parent-child/:id/confirm', protect, parentChildController.confirmParentChildRelationship);
+router.put('/parent-child/:id/decline', protect, parentChildController.declineParentChildRelationship);
+router.put('/parent-child/update-status', protect, parentChildController.updateRelationshipStatus);
+router.get('/parent-child-requests/:parentId', protect, parentChildController.getParentChildRequests);
+router.get('/member/:parentId/children', protect, parentChildController.getParentChildren);
+router.get('/member/:childId/parents', protect, parentChildController.getChildParents);
 
 // =================== DEATH MANAGEMENT ===================
 

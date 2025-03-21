@@ -10,9 +10,17 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id'
       }
     },
-    parent_id: {
+    father_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
+      references: {
+        model: 'members',
+        key: 'id'
+      }
+    },
+    mother_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
       references: {
         model: 'members',
         key: 'id'
@@ -28,12 +36,21 @@ module.exports = (sequelize, DataTypes) => {
       comment: 'Links to the marriage record if the parent relationship is from a marriage'
     },
     status: {
-      type: DataTypes.ENUM('pending', 'confirmed', 'rejected'),
+      type: DataTypes.ENUM('pending', 'confirmed', 'rejected', 'widowed', 'divorced'),
       defaultValue: 'confirmed',
     },
     relationship_type: {
       type: DataTypes.ENUM('biological', 'adopted', 'step'),
       defaultValue: 'biological',
+    },
+    requested_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'members',
+        key: 'id'
+      },
+      comment: 'ID of the member who requested this parent-child relationship'
     }
   }, {
     tableName: 'member_parent_table',
@@ -47,13 +64,23 @@ module.exports = (sequelize, DataTypes) => {
     });
     
     MemberParentTable.belongsTo(models.Member, {
-      foreignKey: 'parent_id',
-      as: 'parent'
+      foreignKey: 'father_id',
+      as: 'father'
+    });
+    
+    MemberParentTable.belongsTo(models.Member, {
+      foreignKey: 'mother_id',
+      as: 'mother'
     });
     
     MemberParentTable.belongsTo(models.ParentTable, {
       foreignKey: 'parent_table_id',
       as: 'parentMarriage'
+    });
+    
+    MemberParentTable.belongsTo(models.Member, {
+      foreignKey: 'requested_by',
+      as: 'requester'
     });
   };
 
