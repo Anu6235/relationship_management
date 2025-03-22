@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Member } from '../../../core/models/member';
 import { MemberService } from '../../../core/services/member.service';
+import { environment } from '../../../../environments/environment';
 
 interface RelationshipResponse {
   success: boolean;
@@ -15,6 +16,8 @@ interface RelationshipResponse {
       pending_spouses: any[]; 
       pending_divorces: any[]; 
       pending_widowed: any[]; 
+      pending_parents: any[];
+      pending_children: any[];
       children: Member[];
       parents: Member[];
       marriages: any[];
@@ -41,7 +44,9 @@ export class FamilyRelationshipComponent implements OnInit {
     widowed_spouses: Member[];
     pending_spouses: any[];
     pending_divorces: any[]; 
-    pending_widowed: any[];   
+    pending_widowed: any[]; 
+    pending_parents: any[];
+    pending_children: any[];  
     children: Member[];
     parents: Member[];
     marriages: any[];
@@ -56,7 +61,7 @@ export class FamilyRelationshipComponent implements OnInit {
     private memberService: MemberService,
     private router: Router
   ) {
-    this.baseUrl = 'http://localhost:5000';
+    this.baseUrl = environment.BASE_URL;
   }
 
   ngOnInit(): void {
@@ -75,6 +80,8 @@ export class FamilyRelationshipComponent implements OnInit {
       .subscribe({
         next: (response: RelationshipResponse) => {
           if (response.success && response.data) {
+            console.log('Pending parents from API:', response.data.relationships.pending_parents);
+            console.log('Pending children from API:', response.data.relationships.pending_children);
             this.relationshipData = {
               member: response.data.member,
               spouse: response.data.relationships.spouse,
@@ -84,13 +91,21 @@ export class FamilyRelationshipComponent implements OnInit {
                 ...request,
                 request_id: request.request_id
               })),
-               pending_widowed: response.data.relationships.pending_widowed.map(request => ({
+              pending_widowed: response.data.relationships.pending_widowed.map(request => ({
                 ...request,
                 request_id: request.request_id
               })),
               pending_divorces: response.data.relationships.pending_divorces?.map(request => ({
                 ...request,
                 request_id: request.request_id
+              })) || [],
+              pending_parents: response.data.relationships.pending_parents?.map(request => ({
+                ...request,
+                request_id: request.request_id  
+              })) || [],
+              pending_children: response.data.relationships.pending_children?.map(request => ({
+                ...request,
+                request_id: request.request_id  
               })) || [],
               children: response.data.relationships.children,
               parents: response.data.relationships.parents,
@@ -379,12 +394,88 @@ export class FamilyRelationshipComponent implements OnInit {
                 spouse => spouse.request_id !== requestId
               );
             }
+            this.fetchRelationshipData(); 
           } else {
             console.error('Failed to reject widowed:', response);
           }
         },
         error: (error) => {
           console.error('Error rejecting widowed:', error);
+        }
+      });
+  }
+
+  confirmParentChild(requestId: number): void {
+    console.log('Parent-child request ID:', requestId);
+    console.log('Member ID:', this.memberId);
+    if (!requestId) {
+      console.error('Invalid request ID');
+      return;
+    }
+    
+    this.memberService.confirmParentChildRelationship(requestId, this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success) {
+            // Remove from both pending_parents and pending_children
+            if (this.relationshipData) {
+              if (this.relationshipData.pending_parents) {
+                this.relationshipData.pending_parents = this.relationshipData.pending_parents.filter(
+                  request => request.request_id !== requestId
+                );
+              }
+              if (this.relationshipData.pending_children) {
+                this.relationshipData.pending_children = this.relationshipData.pending_children.filter(
+                  request => request.request_id !== requestId
+                );
+              }
+            }
+            
+            // Refresh relationship data
+            this.fetchRelationshipData();
+          } else {
+            console.error('Failed to confirm parent-child relationship:', response);
+          }
+        },
+        error: (error) => {
+          console.error('Error confirming parent-child relationship:', error);
+        }
+      });
+  }
+  
+  rejectParentChild(requestId: number): void {
+    console.log('Parent-child request ID:', requestId);
+    console.log('Member ID:', this.memberId);
+    if (!requestId) {
+      console.error('Invalid request ID');
+      return;
+    }
+    
+    this.memberService.declineParentChildRelationship(requestId, this.memberId)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success) {
+            // Remove from both pending_parents and pending_children
+            if (this.relationshipData) {
+              if (this.relationshipData.pending_parents) {
+                this.relationshipData.pending_parents = this.relationshipData.pending_parents.filter(
+                  request => request.request_id !== requestId
+                );
+              }
+              if (this.relationshipData.pending_children) {
+                this.relationshipData.pending_children = this.relationshipData.pending_children.filter(
+                  request => request.request_id !== requestId
+                );
+              }
+            }
+            
+            // No need to refresh data since we're removing the request locally
+          } else {
+            console.error('Failed to reject parent-child relationship:', response);
+          }
+        },
+        error: (error) => {
+          console.error('Error rejecting parent-child relationship:', error);
         }
       });
   }

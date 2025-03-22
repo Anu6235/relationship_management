@@ -5,8 +5,8 @@
   <div
     class="flex items-center p-4 rounded-lg cursor-pointer transition-all duration-150"
     [ngClass]="{
-      'bg-blue-600 text-white shadow-xs-dark': selectedLedgerTypeId === null,
-      'bg-white shadow-xs-dark hover:bg-gray-50': selectedLedgerTypeId !== null
+      'bg-blue-600 text-white shadow-xs': selectedLedgerTypeId === null,
+      'bg-white shadow-xs hover:bg-gray-50': selectedLedgerTypeId !== null
     }"
     (click)="filterLedgersByType(null)"
   >
@@ -51,9 +51,9 @@
     *ngFor="let ledgerType of ledgerTypes; let i = index"
     class="flex items-center p-4 rounded-lg cursor-pointer transition-all duration-150"
     [ngClass]="{
-      'bg-blue-600 text-white shadow-xs-dark':
+      'bg-blue-600 text-white shadow-xs':
         selectedLedgerTypeId === ledgerType.id,
-      'bg-white shadow-xs-dark hover:bg-gray-50':
+      'bg-white shadow-xs hover:bg-gray-50':
         selectedLedgerTypeId !== ledgerType.id
     }"
     (click)="filterLedgersByType(ledgerType.id)"
@@ -95,6 +95,16 @@
       >
         {{ getLedgerCountByType(ledgerType.id) }}
       </p>
+      <!-- <p
+        class="text-sm"
+        [ngClass]="{
+          'text-blue-100': selectedLedgerTypeId === ledgerType.id,
+          'text-gray-600 dark:text-gray-400':
+            selectedLedgerTypeId !== ledgerType.id
+        }"
+      >
+        Total: {{ formatCurrency(getTotalAmountByType(ledgerType.id)) }}
+      </p> -->
     </div>
   </div>
 </div>

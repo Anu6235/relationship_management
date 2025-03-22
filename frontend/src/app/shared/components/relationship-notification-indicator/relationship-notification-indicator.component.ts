@@ -3,6 +3,7 @@ import { MemberService } from '../../../core/services/member.service';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Member } from '../../../core/models/member';
+import { environment } from '../../../../environments/environment';
 
 interface MarriageRequest {
   id: number;
@@ -48,7 +49,7 @@ export class RelationshipNotificationIndicatorComponent implements OnInit {
     private memberService: MemberService,
     private router: Router
   ) {
-    this.baseUrl = 'http://localhost:5000';
+    this.baseUrl = environment.BASE_URL;
   }
   ngOnInit(): void {
     this.checkForPendingRequests();

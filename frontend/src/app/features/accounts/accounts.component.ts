@@ -311,6 +311,19 @@ export class AccountsComponent implements OnInit{
       }
     });
   }
+
+  getTotalAmountByType(ledgerTypeId: number): number {
+    const totalInPaisa = this.ledgers
+      .filter(ledger => ledger.ledger_type_id === ledgerTypeId)
+      .reduce((sum, ledger) => {
+        const amount = ledger.total_amount || 0; 
+        const amountInPaisa = Math.round(amount * 100);
+        return sum + amountInPaisa;
+      }, 0);
+  
+    const totalInRupees = totalInPaisa / 100;
+    return totalInRupees;
+  }
 }
 
 

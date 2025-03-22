@@ -9,7 +9,6 @@ import { PaginationService, PaginationState } from '../../core/services/paginati
 import { finalize, Subscription } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FamilyRelationshipComponent } from '../../shared/components/family-relationship/family-relationship.component';
-import { RelationshipRequestsModalComponent } from '../../shared/modals/relationship-requests-modal/relationship-requests-modal.component';
 import { MemberFormComponent } from '../../shared/modals/member-form/member-form.component';
 import { RelationshipNotificationIndicatorComponent } from '../../shared/components/relationship-notification-indicator/relationship-notification-indicator.component';
 
@@ -19,7 +18,6 @@ import { RelationshipNotificationIndicatorComponent } from '../../shared/compone
   imports: [
     CommonModule,
     DeleteMemberModalComponent,
-    RelationshipRequestsModalComponent,
     VerificationModalComponent,
     MemberFormComponent,
     RelationshipNotificationIndicatorComponent,
@@ -53,7 +51,6 @@ export class MembersComponent implements OnInit {
   currentUser: any = null;
   currentMember: any; 
   isFormModalVisible = false;
-  showRelationshipModal = false;
   formMode: 'add' | 'edit' = 'add';
   formMember: Member | null = null;
   isAddModalOpen = false;
@@ -266,6 +263,7 @@ export class MembersComponent implements OnInit {
     if (this.formMode === 'add') {
       this.members = [...this.members, savedMember];
       this.memberAdded.emit(savedMember);
+      this.loadMembers();
       this.paginationService.updateState({
         totalItems: this.members.length
       });
@@ -433,23 +431,6 @@ export class MembersComponent implements OnInit {
   }
 
   // =================== MARRIAGE MANAGEMENT ===================
-
-  openMarriageConfirmationModal(member: any): void {
-    console.log(member,
-      'member'
-    )
-    this.selectedMemberForMarriageConfirmation = member;
-    this.selectedMemberId = member.id; 
-    console.log(this.selectedMemberId,'this.selectedMemberId')
-    setTimeout(() => {
-      this.showRelationshipModal = true;
-    }, 100);
-  }
-  
-  hideRelationshipModal(): void {
-    this.showRelationshipModal = false;
-    this.selectedMemberForMarriageConfirmation = null;
-  }
   
   // Handle creating a marriage request
   createMarriageRequest(marriageData: any): void {
@@ -775,19 +756,5 @@ export class MembersComponent implements OnInit {
         !m.deceased
       );
     }
-  }
-
-  handleRelationshipRequest(event: {type: string, request: any}): void {
-    console.log('Relationship request action:', event);
-    // Show the modal with the current member ID
-    this.showRelationshipModal = true;
-  }
-
-  closeRelationshipModal(): void {
-    this.showRelationshipModal = false;
-  }
-
-  handleRelationshipActionCompleted(event: any): void {
-    console.log('Relationship action completed:', event);
   }
 }

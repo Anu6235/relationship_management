@@ -39,7 +39,7 @@ export interface Ledger {
     fine_amount: number;
     fine_interval_value: number;
     fine_interval_unit: 'minute' | 'hour' | 'day' | 'month';
-    condition_config: any; // JSON object containing member filter conditions
+    condition_config: any; 
     createdAt?: Date;
     updatedAt?: Date;
   }

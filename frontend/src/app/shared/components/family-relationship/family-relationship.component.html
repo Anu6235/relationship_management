@@ -162,7 +162,6 @@
       </div>
     </div>
 
-    <!-- Past Marriages Sections -->
     <!-- Divorced Spouses -->
     <div
       *ngIf="
@@ -596,6 +595,166 @@
                 {{ toSentenceCase(parent.relationship_type) }}
               </span>
             </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Parents Requests -->
+    <div
+      *ngIf="
+        relationshipData.pending_parents &&
+        relationshipData.pending_parents.length > 0
+      "
+      class="bg-white shadow-md rounded-lg p-6 mb-6"
+    >
+      <h3 class="text-lg font-medium text-gray-800 mb-4">
+        Pending Parent Requests
+      </h3>
+      <div class="space-y-4">
+        <div
+          *ngFor="let request of relationshipData.pending_parents"
+          class="p-4 bg-yellow-50 border border-yellow-200 rounded-md"
+        >
+          <div class="flex justify-between items-center">
+            <div class="flex items-center">
+              <div class="avatar-container avatar-small mr-3">
+                <img
+                  *ngIf="request.profile_image"
+                  [src]="getImageUrl(request.profile_image)"
+                  class="avatar-image"
+                  (error)="handleImageError($event, request)"
+                  alt="{{ request.first_name }} {{ request.last_name }}"
+                />
+                <div *ngIf="!request.profile_image" class="avatar-initials">
+                  {{ request.first_name.charAt(0).toUpperCase()
+                  }}{{ request.last_name.charAt(0).toUpperCase() }}
+                </div>
+              </div>
+              <div>
+                <p class="font-medium">
+                  {{ toSentenceCase(request.first_name) }}
+                  {{ toSentenceCase(request.last_name) }}
+                </p>
+                <p class="text-sm text-gray-600">
+                  <span *ngIf="request.relationship_type === 'biological'"
+                    >Biological
+                  </span>
+                  <span *ngIf="request.relationship_type === 'adoptive'"
+                    >Adoptive
+                  </span>
+                  <span *ngIf="request.relationship_type === 'step'"
+                    >Step
+                  </span>
+                  {{ request.parent_role === "father" ? "Father" : "Mother" }} -
+                  {{
+                    request.is_outgoing
+                      ? "Request sent by you"
+                      : "Request sent to you"
+                  }}
+                  on {{ formatDate(request.created_at) }}
+                </p>
+              </div>
+            </div>
+
+            <div *ngIf="!request.is_outgoing" class="flex space-x-2">
+              <button
+                [ngStyle]="{ 'background-color': '#1A73E8' }"
+                (click)="confirmParentChild(request.id)"
+                class="px-4 py-2 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+              >
+                Accept
+              </button>
+              <button
+                (click)="rejectParentChild(request.request_id)"
+                class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Decline
+              </button>
+            </div>
+            <div *ngIf="request.is_outgoing">
+              <span class="text-sm text-gray-600">Awaiting response</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Children Requests -->
+    <div
+      *ngIf="
+        relationshipData.pending_children &&
+        relationshipData.pending_children.length > 0
+      "
+      class="bg-white shadow-md rounded-lg p-6 mb-6"
+    >
+      <h3 class="text-lg font-medium text-gray-800 mb-4">
+        Pending Child Requests
+      </h3>
+      <div class="space-y-4">
+        <div
+          *ngFor="let request of relationshipData.pending_children"
+          class="p-4 bg-yellow-50 border border-yellow-200 rounded-md"
+        >
+          <div class="flex justify-between items-center">
+            <div class="flex items-center">
+              <div class="avatar-container avatar-small mr-3">
+                <img
+                  *ngIf="request.profile_image"
+                  [src]="getImageUrl(request.profile_image)"
+                  class="avatar-image"
+                  (error)="handleImageError($event, request)"
+                  alt="{{ request.first_name }} {{ request.last_name }}"
+                />
+                <div *ngIf="!request.profile_image" class="avatar-initials">
+                  {{ request.first_name.charAt(0).toUpperCase()
+                  }}{{ request.last_name.charAt(0).toUpperCase() }}
+                </div>
+              </div>
+              <div>
+                <p class="font-medium">
+                  {{ toSentenceCase(request.first_name) }}
+                  {{ toSentenceCase(request.last_name) }}
+                </p>
+                <p class="text-sm text-gray-600">
+                  <span *ngIf="request.relationship_type === 'biological'"
+                    >Biological
+                  </span>
+                  <span *ngIf="request.relationship_type === 'adoptive'"
+                    >Adoptive
+                  </span>
+                  <span *ngIf="request.relationship_type === 'step'"
+                    >Step
+                  </span>
+                  Child -
+                  {{
+                    request.is_outgoing
+                      ? "Request sent by you"
+                      : "Request sent to you"
+                  }}
+                  on {{ formatDate(request.created_at) }}
+                </p>
+              </div>
+            </div>
+
+            <div *ngIf="!request.is_outgoing" class="flex space-x-2">
+              <button
+                [ngStyle]="{ 'background-color': '#1A73E8' }"
+                (click)="confirmParentChild(request.request_id)"
+                class="px-4 py-2 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+              >
+                Accept
+              </button>
+              <button
+                (click)="rejectParentChild(request.request_id)"
+                class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Decline
+              </button>
+            </div>
+            <div *ngIf="request.is_outgoing">
+              <span class="text-sm text-gray-600">Awaiting response</span>
+            </div>
           </div>
         </div>
       </div>

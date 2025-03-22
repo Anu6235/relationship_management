@@ -7,6 +7,7 @@ import { LedgerType, MemberField } from '../../core/models/ledger';
 import { LedgerService } from '../../core/services/ledger.service';
 import { Subscription, interval } from 'rxjs';
 import { AddLedgerModalComponent } from '../../shared/modals/add-ledger-modal/add-ledger-modal.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-settings',
@@ -101,7 +102,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
             contact: response.data.contact
           });
           if (response.data.logo) {
-            this.previewUrl = `http://localhost:5000${response.data.logo}`;
+            this.previewUrl = `${environment.BASE_URL}${response.data.logo}`;
             this.fileName = response.data.logo.split('/').pop() || 'Uploaded logo';
           }
         }

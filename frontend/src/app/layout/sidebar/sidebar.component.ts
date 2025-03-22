@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { AppConfigService } from '../../core/services/app-config.service';
+import { environment } from '../../../environments/environment';
 
 interface MenuItem {
   title: string;
@@ -44,7 +45,7 @@ export class SidebarComponent implements OnInit {
       next: (response) => {
         if (response.success && response.data) {
           if (response.data.logo) {
-            this.logoUrl = `http://localhost:5000${response.data.logo}`;
+            this.logoUrl = `${environment.BASE_URL}${response.data.logo}`;
           }
           if (response.data.app_name) {
             this.appName = response.data.app_name;

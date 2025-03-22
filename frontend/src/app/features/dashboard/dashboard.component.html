@@ -1,1 +1,173 @@
-<p>dashboard works!</p>
+<div class="container px-6 mx-auto">
+  <h2 class="my-6 text-2xl font-semibold text-gray-700">Financial Dashboard</h2>
+
+  <!-- Loading indicator -->
+  <div *ngIf="isLoading" class="flex justify-center items-center my-8">
+    <div
+      class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"
+    ></div>
+  </div>
+
+  <!-- Main metrics cards - removed click handling and dynamic classes -->
+  <div class="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
+    <!-- Total Amount Card -->
+    <div class="flex items-center p-4 rounded-lg shadow-xs bg-white">
+      <div class="p-3 mr-4 text-blue-500 bg-blue-100 rounded-full">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fill-rule="evenodd"
+            d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
+            clip-rule="evenodd"
+          ></path>
+        </svg>
+      </div>
+      <div>
+        <p class="mb-2 text-sm font-medium text-gray-600">Total Amount</p>
+        <p class="text-lg font-semibold text-gray-700">
+          {{ formatCurrency(totalAmount) }}
+        </p>
+        <!-- <p class="text-sm text-gray-500 mt-0.2">{{ ledgers.length }} Bills</p> -->
+      </div>
+    </div>
+
+    <!-- Paid Amount Card -->
+    <div class="flex items-center p-4 rounded-lg shadow-xs bg-white">
+      <div class="p-3 mr-4 text-green-500 bg-green-100 rounded-full">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clip-rule="evenodd"
+          ></path>
+        </svg>
+      </div>
+      <div>
+        <p class="mb-2 text-sm font-medium text-gray-600">Paid Amount</p>
+        <p class="text-lg font-semibold text-gray-700">
+          {{ formatCurrency(totalPaid) }}
+        </p>
+        <!-- <p class="text-sm text-gray-500">
+          {{ getCompletionPercentage(totalPaid, totalAmount) }}% of total
+        </p> -->
+      </div>
+    </div>
+
+    <!-- Pending Amount Card -->
+    <div class="flex items-center p-4 rounded-lg shadow-xs bg-white">
+      <div class="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+            clip-rule="evenodd"
+          ></path>
+        </svg>
+      </div>
+      <div>
+        <p class="mb-2 text-sm font-medium text-gray-600">Pending Amount</p>
+        <p class="text-lg font-semibold text-gray-700">
+          {{ formatCurrency(totalPending) }}
+        </p>
+        <!-- <p class="text-sm text-gray-500">
+          {{ getCompletionPercentage(totalPending, totalAmount) }}% of total
+        </p> -->
+      </div>
+    </div>
+
+    <!-- Overdue Amount Card -->
+    <div class="flex items-center p-4 rounded-lg shadow-xs bg-white">
+      <div class="p-3 mr-4 text-red-500 bg-red-100 rounded-full">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fill-rule="evenodd"
+            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+            clip-rule="evenodd"
+          ></path>
+        </svg>
+      </div>
+      <div>
+        <p class="mb-2 text-sm font-medium text-gray-600">Overdue Amount</p>
+        <p class="text-lg font-semibold text-gray-700">
+          {{ formatCurrency(totalOverdue) }}
+        </p>
+        <!-- <p class="text-sm text-gray-500">
+          {{ getCompletionPercentage(totalOverdue, totalAmount) }}% of total
+        </p> -->
+      </div>
+    </div>
+  </div>
+  <br /><br />
+  <!-- Subscription Type Cards - removed click handling and selection -->
+  <h3 class="mb-4 text-lg font-semibold text-gray-700">Subscription Plans</h3>
+  <div class="grid gap-7 mb-8 md:grid-cols-2 xl:grid-cols-3">
+    <div
+      *ngFor="let type of ledgerTypes"
+      class="flex flex-col p-4 rounded-lg shadow-xs bg-white"
+    >
+      <div class="flex justify-between items-center mb-4">
+        <h4 class="text-md font-semibold text-gray-700">{{ type.name }}</h4>
+        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+          {{ ledgerTypeMetrics.get(type.id)?.count || 0 }} Bills
+        </span>
+      </div>
+
+      <div class="mb-2">
+        <p class="text-sm text-gray-600 mb-1">
+          Total:
+          {{ formatCurrency(ledgerTypeMetrics.get(type.id)?.totalAmount || 0) }}
+        </p>
+
+        <!-- Progress bar for payment status -->
+        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+          <!-- Paid segment -->
+          <div
+            class="bg-green-600 h-2.5 rounded-l-full"
+            [style.width.%]="
+              getCompletionPercentage(
+                ledgerTypeMetrics.get(type.id)?.paidAmount || 0,
+                ledgerTypeMetrics.get(type.id)?.totalAmount || 0
+              )
+            "
+          ></div>
+        </div>
+      </div>
+
+      <!-- Status breakdown -->
+      <div class="grid grid-cols-3 gap-2 mt-auto">
+        <div class="text-center p-2 rounded bg-green-100">
+          <span class="block text-xs text-gray-600">Paid</span>
+          <span class="block text-sm font-medium text-gray-800">
+            {{
+              getCompletionPercentage(
+                ledgerTypeMetrics.get(type.id)?.paidAmount || 0,
+                ledgerTypeMetrics.get(type.id)?.totalAmount || 0
+              )
+            }}%
+          </span>
+        </div>
+        <div class="text-center p-2 rounded bg-orange-100">
+          <span class="block text-xs text-gray-600">Pending</span>
+          <span class="block text-sm font-medium text-gray-800">
+            {{
+              getCompletionPercentage(
+                ledgerTypeMetrics.get(type.id)?.pendingAmount || 0,
+                ledgerTypeMetrics.get(type.id)?.totalAmount || 0
+              )
+            }}%
+          </span>
+        </div>
+        <div class="text-center p-2 rounded bg-red-100">
+          <span class="block text-xs text-gray-600">Overdue</span>
+          <span class="block text-sm font-medium text-gray-800">
+            {{
+              getCompletionPercentage(
+                ledgerTypeMetrics.get(type.id)?.overdueAmount || 0,
+                ledgerTypeMetrics.get(type.id)?.totalAmount || 0
+              )
+            }}%
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

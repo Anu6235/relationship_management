@@ -409,22 +409,23 @@ export class MemberService {
   }
 
   // Confirm a parent-child relationship
-  confirmParentChildRelationship(relationshipId: number, respondingMemberId: number): Observable<any> {
-    return this.http.put<any>(`${this.API_URL}/parent-child/${relationshipId}/confirm`, {
-      responding_member_id: respondingMemberId
-    }).pipe(
-      catchError(this.handleError)
-    );
-  }
+confirmParentChildRelationship(requestId: number, respondingMemberId: number): Observable<any> {
+  console.log(requestId,'requestId')
+    console.log(respondingMemberId,'respondingMemberId')
+  return this.http.put<any>(`${this.API_URL}/parent-child/${requestId}/confirm`, {
+    responding_member_id: respondingMemberId,
+  }).pipe(
+    catchError(this.handleError)
+  );
+}
 
-  // Decline a parent-child relationship
-  declineParentChildRelationship(relationshipId: number, respondingMemberId: number): Observable<any> {
-    return this.http.put<any>(`${this.API_URL}/parent-child/${relationshipId}/decline`, {
-      responding_member_id: respondingMemberId
-    }).pipe(
-      catchError(this.handleError)
-    );
-  }
+declineParentChildRelationship(requestId: number, memberId: number): Observable<any> {
+  return this.http.put<any>(`${this.API_URL}/parent-child/${requestId}/decline`, {
+    responding_member_id: memberId
+  }).pipe(
+    catchError(this.handleError)
+  );
+}
 
   // Update parent-child relationship status when marriage status changes
   updateRelationshipStatus(statusData: ParentChildStatusUpdate): Observable<any> {

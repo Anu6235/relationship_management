@@ -172,17 +172,19 @@ exports.getMemberRelationships = async (req, res) => {
       return potentialSpouse;
     }).filter(Boolean);
 
-    // 5. CHILDREN RELATIONSHIPS
-    // Now use the MemberParentTable directly
+    // 5. CHILDREN RELATIONSHIPS - Only confirmed children
     const childrenData = [];
     
-    // Find children where the member is either father or mother
+    // Find children where the member is either father or mother and status is confirmed/widowed/divorced
     const children = await MemberParentTable.findAll({
       where: {
         [Op.or]: [
           { father_id: memberId },
           { mother_id: memberId }
-        ]
+        ],
+        status: {
+          [Op.in]: ['confirmed', 'widowed', 'divorced'] // Only confirmed child relationships
+        }
       },
       include: [
         {
@@ -205,13 +207,16 @@ exports.getMemberRelationships = async (req, res) => {
       childrenData.push(child);
     }
     
-    // 6. PARENT RELATIONSHIPS
+    // 6. PARENT RELATIONSHIPS - Only confirmed parents
     const parentsData = [];
     
     // Find parents where the member is the child
     const parents = await MemberParentTable.findAll({
       where: {
-        child_id: memberId
+        child_id: memberId,
+        status: {
+          [Op.in]: ['confirmed', 'widowed', 'divorced'] // Only confirmed parent relationships
+        }
       },
       include: [
         {
@@ -248,6 +253,106 @@ exports.getMemberRelationships = async (req, res) => {
       }
     }
     
+    // 7. PENDING PARENT RELATIONSHIPS
+    const pendingParentsData = [];
+    
+    const pendingParents = await MemberParentTable.findAll({
+      where: {
+        child_id: memberId,
+        status: 'pending'
+      },
+      attributes: ['id', 'child_id', 'father_id', 'mother_id', 'status', 'createdAt', 'requested_by'],
+      include: [
+        {
+          model: Member,
+          as: 'father',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
+        },
+        {
+          model: Member,
+          as: 'mother',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
+        },
+        {
+          model: ParentTable,
+          as: 'parentMarriage',
+          attributes: ['id', 'status', 'husband_id', 'wife_id']
+        }
+      ]
+    });
+    
+    // Format pending parent data
+    for (const relationship of pendingParents) {
+      // Add father if exists
+      if (relationship.father) {
+        const father = relationship.father;
+        father.dataValues.relationship_status = 'pending';
+        father.dataValues.relationship_type = relationship.relationship_type;
+        father.dataValues.parent_role = 'father';
+        father.dataValues.request_id = relationship.id;
+        father.dataValues.created_at = relationship.createdAt;
+        father.dataValues.is_outgoing = relationship.requested_by === memberId;
+        father.dataValues.marriage_id = relationship.parent_table_id;
+        pendingParentsData.push(father);
+      }
+      
+      // Add mother if exists
+      if (relationship.mother) {
+        const mother = relationship.mother;
+        mother.dataValues.relationship_status = 'pending';
+        mother.dataValues.relationship_type = relationship.relationship_type;
+        mother.dataValues.parent_role = 'mother';
+        mother.dataValues.request_id = relationship.id;
+        mother.dataValues.created_at = relationship.createdAt;
+        mother.dataValues.is_outgoing = relationship.requested_by === memberId;
+        mother.dataValues.marriage_id = relationship.parent_table_id;
+        pendingParentsData.push(mother);
+      }
+    }
+    
+    // 8. PENDING CHILD RELATIONSHIPS
+    const pendingChildrenData = [];
+    
+    // Find pending child relationships where the member is a parent
+    const pendingChildren = await MemberParentTable.findAll({
+      where: {
+        [Op.or]: [
+          { father_id: memberId },
+          { mother_id: memberId }
+        ],
+        status: 'pending'
+      },
+      attributes: ['id', 'child_id', 'father_id', 'mother_id', 'status', 'createdAt', 'requested_by'],
+      include: [
+        {
+          model: Member,
+          as: 'child',
+          attributes: ['id', 'first_name', 'last_name', 'profile_image', 'gender', 'dob', 'deceased', 'marital_status']
+        },
+        {
+          model: ParentTable,
+          as: 'parentMarriage',
+          attributes: ['id', 'status', 'husband_id', 'wife_id']
+        }
+      ]
+    });
+    
+    // Format pending children data
+    for (const relationship of pendingChildren) {
+      if (!relationship.child) continue;
+      
+      const child = relationship.child;
+      child.dataValues.relationship_status = 'pending';
+      child.dataValues.relationship_type = relationship.relationship_type;
+      child.dataValues.parent_role = relationship.father_id === memberId ? 'father' : 'mother';
+      child.dataValues.request_id = relationship.id;
+      child.dataValues.created_at = relationship.createdAt;
+      child.dataValues.is_outgoing = relationship.requested_by === memberId;
+      child.dataValues.marriage_id = relationship.parent_table_id;
+      
+      pendingChildrenData.push(child);
+    }
+    
     // Return comprehensive relationship data
     return res.json({
       success: true,
@@ -265,6 +370,8 @@ exports.getMemberRelationships = async (req, res) => {
           pending_widowed: pendingWidowed, 
           children: childrenData,
           parents: parentsData,
+          pending_parents: pendingParentsData,
+          pending_children: pendingChildrenData,
           marriages: marriages.map(marriage => ({
             ...marriage.dataValues,
             relationship_status: marriage.status

@@ -59,10 +59,7 @@
           >
             <td class="px-4 py-3">
               <div class="flex items-center">
-                <app-relationship-notification-indicator
-                  [member]="member"
-                  (requestAction)="openMarriageConfirmationModal(member)"
-                >
+                <app-relationship-notification-indicator [member]="member">
                   <div class="relative w-12 h-12 rounded-full md:block">
                     <img
                       [src]="member.profile_image_url"
@@ -319,10 +316,3 @@
   (confirmed)="verifyMember()"
   (cancelled)="closeVerificationModal()"
 ></app-verification-modal>
-
-<app-relationship-requests-modal
-  [isVisible]="showRelationshipModal"
-  [memberId]="selectedMemberId"
-  (modalClosed)="hideRelationshipModal()"
-  (relationshipActionCompleted)="handleRelationshipAction($event)"
-></app-relationship-requests-modal>

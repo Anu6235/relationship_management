@@ -58,6 +58,8 @@ export interface RelationshipResponse {
       pending_spouses: Member[];
       pending_divorces: any[];
       pending_widowed: any[];
+      pending_parents: any[];
+      pending_children: any[]; 
       children: Member[];
       parents: Member[];
       marriages: ParentTable[];
