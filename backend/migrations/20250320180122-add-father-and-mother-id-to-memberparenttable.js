@@ -17,7 +17,7 @@ module.exports = {
         type: 'foreign key',
         name: 'fk_mother_id_members',
         references: {
-          table: 'members',
+          table: 'Members',
           field: 'id',
         },
         onUpdate: 'CASCADE',

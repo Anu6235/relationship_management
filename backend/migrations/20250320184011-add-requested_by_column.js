@@ -6,7 +6,7 @@ module.exports = {
       type: Sequelize.INTEGER,
       allowNull: true,
       references: {
-        model: 'members',
+        model: 'Members',
         key: 'id'
       },
       comment: 'ID of the member who requested this parent-child relationship'

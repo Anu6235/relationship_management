@@ -3,8 +3,8 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.dropTable('members');
-    await queryInterface.createTable('members', {
+    await queryInterface.dropTable('Members');
+    await queryInterface.createTable('Members', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -57,7 +57,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: 'users', 
+          model: 'Users', 
           key: 'id',
         },
         onUpdate: 'CASCADE',
@@ -87,6 +87,6 @@ module.exports = {
   },
 
   async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('members');
+    await queryInterface.dropTable('Members');
   }
 };

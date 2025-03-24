@@ -81,7 +81,7 @@ module.exports = (sequelize, DataTypes) => {
       comment: 'Comma-separated ParentTable IDs of confirmed marriages'
     }
   }, {
-    tableName: 'members',
+    tableName: 'Members',
     underscored: true,
   });
 

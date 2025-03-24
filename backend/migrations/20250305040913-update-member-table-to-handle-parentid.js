@@ -3,7 +3,7 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     // Add the new parent_id column
-    await queryInterface.addColumn('members', 'parent_id', {
+    await queryInterface.addColumn('Members', 'parent_id', {
       type: Sequelize.INTEGER,
       allowNull: true,
       references: {
@@ -15,12 +15,12 @@ module.exports = {
     });
 
     // Remove the old father_id and mother_id columns
-    await queryInterface.removeColumn('members', 'father_id');
-    await queryInterface.removeColumn('members', 'mother_id');
+    await queryInterface.removeColumn('Members', 'father_id');
+    await queryInterface.removeColumn('Members', 'mother_id');
 
     // Populate the parent_id only where marriage is confirmed
     await queryInterface.sequelize.query(`
-      UPDATE members AS m
+      UPDATE Members AS m
       SET parent_id = (
         SELECT id FROM parent_table AS p
         WHERE (p.husband_id = m.id OR p.wife_id = m.id) AND p.status = 'confirmed'
@@ -35,16 +35,16 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     // Revert changes by adding back father_id and mother_id
-    await queryInterface.addColumn('members', 'father_id', {
+    await queryInterface.addColumn('Members', 'father_id', {
       type: Sequelize.INTEGER,
       allowNull: true,
     });
-    await queryInterface.addColumn('members', 'mother_id', {
+    await queryInterface.addColumn('Members', 'mother_id', {
       type: Sequelize.INTEGER,
       allowNull: true,
     });
 
     // Remove the parent_id column
-    await queryInterface.removeColumn('members', 'parent_id');
+    await queryInterface.removeColumn('Members', 'parent_id');
   },
 };

@@ -24,7 +24,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'members',
+          model: 'Members',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -58,7 +58,7 @@ module.exports = {
     // 3. Instead of changing the parent_id column type, we'll handle the migration of data
     // Get all members with parent_id
     const members = await queryInterface.sequelize.query(
-      'SELECT id, parent_id FROM members WHERE parent_id IS NOT NULL',
+      'SELECT id, parent_id FROM Members WHERE parent_id IS NOT NULL',
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
 
@@ -78,7 +78,7 @@ module.exports = {
     }
 
     // 4. Remove the foreign key constraint if it exists
-    await queryInterface.removeConstraint('members', 'members_parent_id_foreign_idx')
+    await queryInterface.removeConstraint('Members', 'members_parent_id_foreign_idx')
       .catch(error => {
         console.log('Constraint may not exist:', error.message);
       });

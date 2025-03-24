@@ -2,7 +2,7 @@
   "development": {
     "username": "pos_user",
    "password": "AppW1thP@ssw0rd",
-    "database": "member_management",
+    "database": "member_management_latest",
     "host": "128.199.25.90",
     "dialect": "mysql"
   },
