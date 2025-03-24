@@ -34,11 +34,13 @@ app.use('/api/ledgers', ledgerRoutes);
 app.use('/api/ledger-types', ledgerTypeRoutes);
 
 
-app.use('*', (req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Route not found'
-    });
+// Serve Angular frontend
+const distPath = path.join(__dirname, 'dist', 'frontend', 'browser');
+app.use(express.static(distPath));
+
+// Handle Angular routing (must be AFTER API routes)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
 });
 
 app.use((err, req, res, next) => {
