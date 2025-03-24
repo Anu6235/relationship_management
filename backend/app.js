@@ -20,6 +20,9 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+//  const threeFoldersBack = path.resolve(__dirname, '../');
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 // API Routes
 app.use('/api/auth', authRoutes);
