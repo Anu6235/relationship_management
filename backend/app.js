@@ -20,8 +20,6 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-//  const threeFoldersBack = path.resolve(__dirname, '../');
-app.use(express.static(path.join(__dirname, 'public')));
 
 
 // API Routes
@@ -34,6 +32,8 @@ app.use('/api/ledger-types', ledgerTypeRoutes);
 // Serve Angular frontend
 const distPath = path.join(__dirname, 'dist', 'frontend', 'browser');
 app.use(express.static(distPath));
+//  const threeFoldersBack = path.resolve(__dirname, '../');
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle Angular routing (must be AFTER API routes)
 app.get('*', (req, res) => {
